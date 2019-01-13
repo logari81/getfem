@@ -4041,8 +4041,8 @@ namespace getfem {
         // gmm::add(gmm::scaled(t.as_vector(), coeff), elem);
       }
       if (ipt == nbpt-1 || interpolate) {
-        const mesh_fem &mf = *(mfg ? *mfg : mfn);
         GMM_ASSERT1(mfg ? *mfg : mfn, "Internal error");
+        const mesh_fem &mf = *(mfg ? *mfg : mfn);
         const gmm::sub_interval &I = mf.is_reduced() ? Ir : In;
         base_vector &V = mf.is_reduced() ? Vr : Vn;
         if (!(ctx.is_convex_num_valid())) return 0;
@@ -6629,17 +6629,17 @@ namespace getfem {
         GMM_ASSERT1(!scalar || (root->tensor().size() == 1),
                     "The result of the given expression is not a scalar");
         ga_instruction_set::region_mim rm(td.mim, td.rg, 0);
-        gis.whole_instructions[rm].m = td.m;
+        gis.all_instructions[rm].m = td.m;
         ga_if_hierarchy if_hierarchy;
-        ga_compile_node(root, workspace, gis,
-                        gis.whole_instructions[rm],*(td.m),true,if_hierarchy);
+        ga_compile_node(root, workspace, gis, gis.all_instructions[rm],
+                        *(td.m), true, if_hierarchy);
 
         gis.coeff = scalar_type(1);
         pga_instruction pgai;
         workspace.assembled_tensor() = root->tensor();
         pgai = std::make_shared<ga_instruction_add_to_coeff>
           (workspace.assembled_tensor(), root->tensor(), gis.coeff);
-        gis.whole_instructions[rm].instructions.push_back(std::move(pgai));
+        gis.all_instructions[rm].instructions.push_back(std::move(pgai));
       }
     }
   }
@@ -6733,10 +6733,10 @@ namespace getfem {
   void ga_compile_interpolation(ga_workspace &workspace,
                                 ga_instruction_set &gis) {
     gis.transformations.clear();
-    gis.whole_instructions.clear();
+    gis.all_instructions.clear();
     for (size_type i = 0; i < workspace.nb_trees(); ++i) {
       const ga_workspace::tree_description &td = workspace.tree_info(i);
-      if (td.interpolation > 0) {
+      if (td.operation != ga_workspace::ASSEMBLY) {
         gis.trees.push_back(*(td.ptree));
 
         // Semantic analysis mainly to evaluate fixed size variables and data
@@ -6748,8 +6748,7 @@ namespace getfem {
         if (root) {
           // Compile tree
           ga_instruction_set::region_mim rm(td.mim, td.rg, 0);
-          ga_instruction_set::region_mim_instructions &rmi
-            = gis.whole_instructions[rm];
+          auto &rmi = gis.all_instructions[rm];
           rmi.m = td.m;
           rmi.im = td.mim;
           // rmi.interpolate_infos.clear();
@@ -6770,22 +6769,24 @@ namespace getfem {
   void ga_compile(ga_workspace &workspace,
                   ga_instruction_set &gis, size_type order) {
     gis.transformations.clear();
-    gis.whole_instructions.clear();
-    for (size_type version : std::array<size_type, 3>{1, 0, 2}) {
+    gis.all_instructions.clear();
+    std::array<ga_workspace::operation_type,3>
+      phases{ga_workspace::PRE_ASSIGNMENT,
+             ga_workspace::ASSEMBLY,
+             ga_workspace::POST_ASSIGNMENT};
+    for (const auto &phase : phases) {
       for (size_type i = 0; i < workspace.nb_trees(); ++i) {
         ga_workspace::tree_description &td = workspace.tree_info(i);
 
-        if ((version == td.interpolation) &&
-            ((version == 0 && td.order == order) || // Assembly
-             ((version > 0 && (td.order == size_type(-1) || // Assignment
-                               td.order == size_type(-2) - order))))) {
+        if (phase == td.operation &&
+            (td.order == order || td.order == size_type(-1))) {
           ga_tree *added_tree = 0;
-          if (td.interpolation) {
-            gis.interpolation_trees.push_back(*(td.ptree));
-            added_tree = &(gis.interpolation_trees.back());
-          } else {
+          if (td.operation == ga_workspace::ASSEMBLY) {
             gis.trees.push_back(*(td.ptree));
             added_tree = &(gis.trees.back());
+          } else {
+            gis.interpolation_trees.push_back(*(td.ptree));
+            added_tree = &(gis.interpolation_trees.back());
           }
 
           // Semantic analysis mainly to evaluate fixed size variables and data
@@ -6802,8 +6803,7 @@ namespace getfem {
             if (added_tree->secondary_domain.size())
               psd = workspace.secondary_domain(added_tree->secondary_domain);
             ga_instruction_set::region_mim rm(td.mim, td.rg, psd);
-            ga_instruction_set::region_mim_instructions &rmi
-              = gis.whole_instructions[rm];
+            auto &rmi = gis.all_instructions[rm];
             rmi.m = td.m;
             rmi.im = td.mim;
             // rmi.interpolate_infos.clear();
@@ -6813,8 +6813,8 @@ namespace getfem {
             // cout << "compilation finished "; ga_print_node(root, cout);
             // cout << endl;
 
-            if (version > 0) { // Assignment OR interpolation
-              if (!td.varname_interpolation.empty()) { // assignment
+            if (phase != ga_workspace::ASSEMBLY) { // Assignment/interpolation
+              if (!td.varname_interpolation.empty()) {
                 auto *imd
                   = workspace.associated_im_data(td.varname_interpolation);
                 auto &V = const_cast<model_real_plain_vector &>
@@ -7013,8 +7013,8 @@ namespace getfem {
 
   void ga_function_exec(ga_instruction_set &gis) {
 
-    for (auto &&instr : gis.whole_instructions) {
-      ga_instruction_list &gil = instr.second.instructions;
+    for (auto &&instr : gis.all_instructions) {
+      const auto &gil = instr.second.instructions;
       for (size_type j = 0; j < gil.size(); ++j) j += gil[j]->exec();
     }
   }
@@ -7028,16 +7028,16 @@ namespace getfem {
     for (const std::string &t : gis.transformations)
       workspace.interpolate_transformation(t)->init(workspace);
 
-    for (auto &&instr : gis.whole_instructions) {
+    for (auto &&instr : gis.all_instructions) {
 
       const getfem::mesh_im &mim = *(instr.first.mim());
       const mesh_region &region = *(instr.first.region());
       const getfem::mesh &m = *(instr.second.m);
       GMM_ASSERT1(&m == &(gic.linked_mesh()),
                   "Incompatibility of meshes in interpolation");
-      ga_instruction_list &gilb = instr.second.begin_instructions;
-      ga_instruction_list &gile = instr.second.elt_instructions;
-      ga_instruction_list &gil = instr.second.instructions;
+      const auto &gilb = instr.second.begin_instructions;
+      const auto &gile = instr.second.elt_instructions;
+      const auto &gil = instr.second.instructions;
 
       // iteration on elements (or faces of elements)
       std::vector<size_type> ind;
@@ -7109,30 +7109,6 @@ namespace getfem {
     gic.finalize();
   }
 
-  void ga_interpolation_single_point_exec
-  (ga_instruction_set &gis, ga_workspace &workspace,
-   const fem_interpolation_context &ctx_x, const base_small_vector &Normal,
-   const mesh &interp_mesh) {
-    gis.ctx = ctx_x;
-    gis.Normal = Normal;
-    gmm::clear(workspace.assembled_tensor().as_vector());
-    gis.nbpt = 1;
-    gis.ipt = 0;
-    gis.pai = 0;
-
-    for (auto &&instr : gis.whole_instructions) {
-      const getfem::mesh &m = *(instr.second.m);
-      GMM_ASSERT1(&m == &interp_mesh,
-                  "Incompatibility of meshes in interpolation");
-      ga_instruction_list &gilb = instr.second.begin_instructions;
-      for (size_type j = 0; j < gilb.size(); ++j) j += gilb[j]->exec();
-      ga_instruction_list &gile = instr.second.elt_instructions;
-      for (size_type j = 0; j < gile.size(); ++j) j+=gile[j]->exec();
-      ga_instruction_list &gil = instr.second.instructions;
-      for (size_type j = 0; j < gil.size(); ++j) j += gil[j]->exec();
-    }
-  }
-
   void ga_exec(ga_instruction_set &gis, ga_workspace &workspace) {
     base_matrix G1, G2;
     base_small_vector un;
@@ -7141,7 +7117,7 @@ namespace getfem {
     for (const std::string &t : gis.transformations)
       workspace.interpolate_transformation(t)->init(workspace);
 
-    for (auto &instr : gis.whole_instructions) {
+    for (auto &instr : gis.all_instructions) {
       const getfem::mesh_im &mim = *(instr.first.mim());
       psecondary_domain psd = instr.first.psd();
       const getfem::mesh &m = *(instr.second.m);

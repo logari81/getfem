@@ -396,7 +396,7 @@ namespace getfem {
                               const mesh_im &mim, const mesh_region &rg,
                               const std::string &expr,
                               size_type add_derivative_order,
-                              bool function_expr, size_type for_interpolation,
+                              bool function_expr, operation_type op_type,
                               const std::string varname_interpolation) {
     if (tree.root) {
       // Eliminate the term if it corresponds to disabled variables
@@ -413,8 +413,8 @@ namespace getfem {
       bool remain = true;
       size_type order = 0, ind_tree = 0;
 
-      if (for_interpolation)
-        order = size_type(-1) - add_derivative_order;
+      if (op_type != ga_workspace::ASSEMBLY)
+        order = add_derivative_order;
       else {
         switch(tree.root->test_function_type) {
         case 0: order = 0; break;
@@ -436,7 +436,7 @@ namespace getfem {
             td.name_test2 == tree.root->name_test2 &&
             td.interpolate_name_test2 == tree.root->interpolate_name_test2 &&
             td.rg == &rg &&
-            td.interpolation == for_interpolation &&
+            td.operation == op_type &&
             td.varname_interpolation == varname_interpolation) {
           ga_tree &ftree = *(td.ptree);
 
@@ -467,11 +467,11 @@ namespace getfem {
         trees.back().interpolate_name_test1 = root->interpolate_name_test1;
         trees.back().interpolate_name_test2 = root->interpolate_name_test2;
         trees.back().order = order;
-        trees.back().interpolation = for_interpolation;
+        trees.back().operation = op_type;
         trees.back().varname_interpolation = varname_interpolation;
        }
 
-      if (for_interpolation == 0 && order < add_derivative_order) {
+      if (op_type == ga_workspace::ASSEMBLY && order < add_derivative_order) {
         std::set<var_trans_pair> expr_variables;
         ga_extract_variables((remain ? tree : *(trees[ind_tree].ptree)).root,
                              *this, m, expr_variables, true);
@@ -489,7 +489,7 @@ namespace getfem {
             GA_TOCTIC("Analysis after Derivative time");
             // cout << "after analysis "  << ga_tree_to_string(dtree) << endl;
             add_tree(dtree, m, mim, rg, expr, add_derivative_order,
-                     function_expr, for_interpolation, varname_interpolation);
+                     function_expr, op_type, varname_interpolation);
           }
         }
       }
@@ -545,7 +545,7 @@ namespace getfem {
           // cout << "adding tree " << ga_tree_to_string(ltree) << endl;
           max_order = std::max(ltree.root->nb_test_functions(), max_order);
           add_tree(ltree, mim.linked_mesh(), mim, rg, expr,
-                   add_derivative_order, true, 0, "");
+                   add_derivative_order, true);
         }
       }
     }
@@ -561,7 +561,7 @@ namespace getfem {
       // GMM_ASSERT1(tree.root->nb_test_functions() == 0,
       //            "Invalid function expression");
       add_tree(tree, dummy_mesh(), dummy_mesh_im(), dummy_mesh_region(),
-               expr, 0, true, 0, "");
+               expr, 0, true);
     }
   }
 
@@ -576,7 +576,8 @@ namespace getfem {
     if (tree.root) {
       // GMM_ASSERT1(tree.root->nb_test_functions() == 0,
       //            "Invalid expression containing test functions");
-      add_tree(tree, m, dummy_mesh_im(), rg, expr, 0, false, 1, "");
+      add_tree(tree, m, dummy_mesh_im(), rg, expr, 0, false,
+               ga_workspace::PRE_ASSIGNMENT);
     }
   }
 
@@ -592,7 +593,8 @@ namespace getfem {
     if (tree.root) {
       GMM_ASSERT1(tree.root->nb_test_functions() == 0,
                   "Invalid expression containing test functions");
-      add_tree(tree, m, mim, rg, expr, 0, false, 1, "");
+      add_tree(tree, m, mim, rg, expr, 0, false,
+               ga_workspace::PRE_ASSIGNMENT);
     }
   }
 
@@ -610,7 +612,9 @@ namespace getfem {
     if (tree.root) {
       GMM_ASSERT1(tree.root->nb_test_functions() == 0,
                   "Invalid expression containing test functions");
-      add_tree(tree, m, mim, rg, expr, order+1, false, (before ? 1 : 2),
+      add_tree(tree, m, mim, rg, expr, order+1, false,
+               before ? ga_workspace::PRE_ASSIGNMENT
+                      : ga_workspace::POST_ASSIGNMENT,
                varname);
     }
   }
@@ -879,7 +883,7 @@ namespace getfem {
 
   void ga_workspace::tree_description::copy(const tree_description& td) {
     order = td.order;
-    interpolation = td.interpolation;
+    operation = td.operation;
     varname_interpolation = td.varname_interpolation;
     name_test1 = td.name_test1;
     name_test2 = td.name_test2;
