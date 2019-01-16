@@ -270,12 +270,12 @@ namespace getfem {
 
     struct var_description {
 
-      bool is_variable;
-      bool is_fem_dofs;
+      const bool is_variable;
+      const bool is_fem_dofs;
       const mesh_fem *mf;
+      const im_data *imd;
       gmm::sub_interval I;
       const model_real_plain_vector *V;
-      const im_data *imd;
       bgeot::multi_index qdims;  // For data having a qdim different than
                                  // the qdim of the fem or im_data
                                  // (dim per dof for dof data)
@@ -287,18 +287,15 @@ namespace getfem {
         return q;
       }
 
-      var_description(bool is_var, bool is_fem, const mesh_fem *mf_,
+      var_description(bool is_var, const mesh_fem *mf_, const im_data *imd_,
                       gmm::sub_interval I_, const model_real_plain_vector *v,
-                      const im_data *imd_, size_type Q)
-        : is_variable(is_var), is_fem_dofs(is_fem), mf(mf_), I(I_), V(v),
-          imd(imd_), qdims(1)
+                      size_type Q)
+        : is_variable(is_var), is_fem_dofs(mf_ != 0), mf(mf_), imd(imd_),
+          I(I_), V(v), qdims(1)
       {
         GMM_ASSERT1(Q > 0, "Bad dimension");
         qdims[0] = Q;
       }
-      var_description() : is_variable(false), is_fem_dofs(false),
-                          mf(0), V(0), imd(0), qdims(1)
-      { qdims[0] = 1; }
     };
 
   public:

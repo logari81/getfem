@@ -45,20 +45,20 @@ namespace getfem {
   void ga_workspace::add_fem_variable
   (const std::string &name, const mesh_fem &mf,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
-    variables[name] = var_description(true, true, &mf, I, &VV, 0, 1);
+    variables.emplace(name, var_description(true, &mf, 0, I, &VV, 1));
   }
 
   void ga_workspace::add_im_variable
   (const std::string &name, const im_data &imd,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
-    variables[name] = var_description(true, false, 0, I, &VV, &imd, 1);
+    variables.emplace(name, var_description(true, 0, &imd, I, &VV, 1));
   }
 
   void ga_workspace::add_fixed_size_variable
   (const std::string &name,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
-    variables[name] = var_description(true, false, 0, I, &VV, 0,
-                                      dim_type(gmm::vect_size(VV)));
+    variables.emplace(name, var_description(true, 0, 0, I, &VV,
+                                            dim_type(gmm::vect_size(VV))));
   }
 
   void ga_workspace::add_fem_constant
@@ -68,22 +68,22 @@ namespace getfem {
                              << "has zero degrees of freedom");
     size_type Q = gmm::vect_size(VV)/mf.nb_dof();
     if (Q == 0) Q = size_type(1);
-    variables[name] = var_description(false, true, &mf,
-                                      gmm::sub_interval(), &VV, 0, Q);
+    variables.emplace(name, var_description(false, &mf, 0,
+                                            gmm::sub_interval(), &VV, Q));
   }
 
   void ga_workspace::add_fixed_size_constant
   (const std::string &name, const model_real_plain_vector &VV) {
-    variables[name] = var_description(false, false, 0,
-                                      gmm::sub_interval(), &VV, 0,
-                                      gmm::vect_size(VV));
+    variables.emplace(name, var_description(false, 0, 0,
+                                            gmm::sub_interval(), &VV,
+                                            gmm::vect_size(VV)));
   }
 
   void ga_workspace::add_im_data(const std::string &name, const im_data &imd,
                                  const model_real_plain_vector &VV) {
-    variables[name] = var_description
-      (false, false, 0, gmm::sub_interval(), &VV, &imd,
-       gmm::vect_size(VV)/(imd.nb_filtered_index() * imd.nb_tensor_elem()));
+    variables.emplace(name, var_description
+      (false, 0, &imd, gmm::sub_interval(), &VV,
+       gmm::vect_size(VV)/(imd.nb_filtered_index() * imd.nb_tensor_elem())));
   }
 
   bool ga_workspace::variable_exists(const std::string &name) const {
