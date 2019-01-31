@@ -23,7 +23,7 @@ PYTHON        = python
 SPHINXROOT    = http://svn.python.org/projects
 LANGUAGE      = en
 SPHINXOPTS    = -D language=$(LANGUAGE)
-SPHINXBUILD   = $(PYTHON) tools/sphinx-build.py
+SPHINXBUILD   = sphinx-build
 SPHINXINTL    = sphinx-intl
 PAPER         =
 SOURCES       = $(srcdir)/source
@@ -93,7 +93,7 @@ build: $(srcdir)/source/matlab/cmdref.rst $(srcdir)/source/python/cmdref.rst $(s
 	echo # rm -fr build/$(BUILDER)/*.png
 	mkdir -p build/$(BUILDER) build/doctrees
 	echo # PYTHONPATH=../../interface/src/python LD_PRELOAD=../../src/.libs/libgetfem.so $(SPHINXBUILD) $(ALLSPHINXOPTS)
-	PYTHONPATH=../../interface/src/python $(SPHINXBUILD) $(ALLSPHINXOPTS)
+	PYTHONPATH=sphinx-build $(SPHINXBUILD) $(ALLSPHINXOPTS)
 	@echo
 
 view:
