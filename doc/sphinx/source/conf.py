@@ -294,9 +294,9 @@ latex_logo = '.static/logogetfem.png'
 #  'fncychap'  : Inclusion of the "fncychap" package, default '\\usepackage[Bjarne]{fncychap}' 
 #  'preamble'  : Additional preamble content, default empty.
 #  'footer'    : Additional footer content (before the indices), default empty.
-latex_elements = [
-    ('preamble',user_preamble),
-]
+latex_elements = {
+    'preamble': 'user_preamble',
+}
 
 # A list of file names, relative to the configuration directory, to copy to
 # the build directory when building LaTeX output.

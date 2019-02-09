@@ -22,8 +22,9 @@
 PYTHON        = python
 LANGUAGE      = en
 SPHINXOPTS    = -D language=$(LANGUAGE)
-SPHINXBUILD   = sphinx-build
-SPHINXINTL    = sphinx-intl
+SPHINXROOT   = ~/.local/bin/
+SPHINXBUILD   = $(SPHINXROOT)sphinx-build
+SPHINXINTL    = $(SPHINXROOT)sphinx-intl
 PAPER         =
 SOURCES       = $(srcdir)/source
 DISTVERSION   = @VERSION@
