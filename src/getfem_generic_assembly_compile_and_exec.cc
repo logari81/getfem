@@ -35,6 +35,74 @@
 namespace getfem {
 
 
+  template <class VEC1, class VEC2>
+  inline void copy_scaled_4(const VEC1 &v1, const scalar_type a, VEC2 &v2) {
+    auto it1 = v1.begin();
+    auto it2 = v2.begin(), it2e = v2.end();
+    size_type nd = ((v1.size()) >> 2);
+    for (size_type i = 0; i < nd; ++i) {
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+    }
+    for (; it2 != it2e;)
+      *it2++ = (*it1++) * a;
+  }
+
+  template <class VEC1, class VEC2>
+  inline void add_scaled_4(const VEC1 &v1, const scalar_type a, VEC2 &v2) {
+    auto it1 = v1.begin();
+    auto it2 = v2.begin(), it2e = v2.end();
+    size_type nd = ((v1.size()) >> 2);
+    for (size_type i = 0; i < nd; ++i) {
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+    }
+    for (; it2 != it2e;)
+      *it2++ += (*it1++) * a;
+  }
+
+  template <class VEC1, class VEC2>
+  inline void copy_scaled_8(const VEC1 &v1, const scalar_type a, VEC2 &v2) {
+    auto it1 = v1.begin();
+    auto it2 = v2.begin(), it2e = v2.end();
+    size_type nd = ((v1.size()) >> 3);
+    for (size_type i = 0; i < nd; ++i) {
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+      *it2++ = (*it1++) * a;
+    }
+    for (; it2 != it2e;)
+      *it2++ = (*it1++) * a;
+  }
+
+  template <class VEC1, class VEC2>
+  inline void add_scaled_8(const VEC1 &v1, const scalar_type a, VEC2 &v2) {
+    auto it1 = v1.begin();
+    auto it2 = v2.begin(), it2e = v2.end();
+    size_type nd = ((v1.size()) >> 3);
+    for (size_type i = 0; i < nd; ++i) {
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+      *it2++ += (*it1++) * a;
+    }
+    for (; it2 != it2e;)
+      *it2++ += (*it1++) * a;
+  }
+
   bool operator <(const gauss_pt_corresp &gpc1,
                   const gauss_pt_corresp &gpc2) {
     if (gpc1.pai != gpc2.pai)
@@ -4017,29 +4085,12 @@ namespace getfem {
       if (ipt == 0 || interpolate) {
         if (empty_weight) elem.resize(0);
         elem.resize(t.size());
-        if (!empty_weight) {
-          auto itt = t.begin();
-          auto it = elem.begin();
-          const auto ite = elem.end();
-          size_type nd = ((t.size()) >> 2);
-          for (size_type i = 0; i < nd; ++i) {
-            *it++ = (*itt++) * coeff; *it++ = (*itt++) * coeff;
-            *it++ = (*itt++) * coeff; *it++ = (*itt++) * coeff;
-          }
-          for (; it != ite;) *it++ = (*itt++) * coeff;
-        }
-      } else if (!empty_weight) {
-        auto itt = t.begin();
-        auto it = elem.begin();
-        const auto ite = elem.end();
-        size_type nd = ((t.size()) >> 2);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ += (*itt++) * coeff; *it++ += (*itt++) * coeff;
-          *it++ += (*itt++) * coeff; *it++ += (*itt++) * coeff;
-        }
-        for (; it != ite;) *it++ += (*itt++) * coeff;
+        if (!empty_weight)
+          copy_scaled_4(t, coeff, elem);
+      } else if (!empty_weight)
         // gmm::add(gmm::scaled(t.as_vector(), coeff), elem);
-      }
+        add_scaled_4(t, coeff, elem);
+
       if (ipt == nbpt-1 || interpolate) {
         GMM_ASSERT1(mfg ? *mfg : mfn, "Internal error");
         const mesh_fem &mf = *(mfg ? *mfg : mfn);
@@ -4159,9 +4210,8 @@ namespace getfem {
    const std::vector<size_type> &dofs1, const std::vector<size_type> &dofs2,
    std::vector<size_type> &dofs1_sort,
    base_vector &elem, scalar_type threshold, size_type N) {
-    size_type maxest = (N+1) * std::max(dofs1.size(), dofs2.size());
-    size_type s1 = dofs1.size(), s2 = dofs2.size();
-    gmm::elt_rsvector_<scalar_type> ev;
+
+    size_type s1 = dofs1.size();
 
     dofs1_sort.resize(s1);
     for (size_type i = 0; i < s1; ++i) { // insertion sort
@@ -4176,10 +4226,15 @@ namespace getfem {
     // the_indto_sort = &dofs1;
     // qsort(&(dofs1_sort[0]), s1, sizeof(size_type), compare_my_indices);
 
+    gmm::elt_rsvector_<scalar_type> ev;
+
+    size_type maxest = (N+1) * s1;
     base_vector::const_iterator it = elem.cbegin();
-    for (size_type j = 0; j < s2; ++j) { // Iteration on columns
-      if (j) it += s1;
-      std::vector<gmm::elt_rsvector_<scalar_type>> &col = K[dofs2[j]];
+    bool first(true);
+    for (const size_type &dof2 : dofs2) { // Iteration on columns
+      if (first) first = false;
+      else it += s1;
+      std::vector<gmm::elt_rsvector_<scalar_type>> &col = K[dof2];
       size_type nb = col.size();
 
       if (nb == 0) {
@@ -4238,6 +4293,37 @@ namespace getfem {
   }
 
 
+  inline void populate_dofs_vector
+  (std::vector<size_type> &dofs,
+   const size_type &size, const size_type &ifirst, const size_type &qmult,
+   const getfem::mesh::ind_set &mfdofs)
+  {
+    dofs.assign(size, ifirst);
+    auto itd = dofs.begin();
+    if (qmult == 1)
+      for (const auto &dof : mfdofs) *itd++ += dof;
+    else
+      for (const auto &dof : mfdofs)
+        for (size_type q = 0; q < qmult; ++q) *itd++ += dof + q;
+  }
+
+  inline void populate_dofs_vector // special case for qmult == 1
+  (std::vector<size_type> &dofs, const size_type &size, const size_type &ifirst, 
+   const getfem::mesh::ind_set &mfdofs)
+  {
+    dofs.assign(size, ifirst);
+    auto itd = dofs.begin();
+    for (const auto &dof : mfdofs) *itd++ += dof;
+  }
+
+
+  inline void populate_contiguous_dofs_vector
+  (std::vector<size_type> &dofs, const size_type &size, const size_type &ifirst)
+  {
+    dofs.assign(size, ifirst);
+    for (size_type i=0; i < size; ++i) dofs[i] += i;
+  }
+
   template <class MAT = model_real_sparse_matrix>
   struct ga_instruction_matrix_assembly : public ga_instruction {
     const base_tensor &t;
@@ -4260,28 +4346,12 @@ namespace getfem {
       if (initialize) {
         if (empty_weight) elem.resize(0);
         elem.resize(t.size());
-        if (!empty_weight) {
-          auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-          scalar_type e = coeff*alpha1*alpha2;
-          size_type nd = ((t.size()) >> 2);
-          for (size_type i = 0; i < nd; ++i) {
-            *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-            *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-          }
-          for (; it != ite;) *it++ = (*itt++) * e;
-        }
-      } else if (!empty_weight){
-        // Faster than a daxpy blas call on my config
-        auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-        scalar_type e = coeff*alpha1*alpha2;
-        size_type nd = ((t.size()) >> 2);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-        }
-        for (; it != ite;) *it++ += (*itt++) * e;
+        if (!empty_weight)
+          copy_scaled_4(t, coeff*alpha1*alpha2, elem);
+      } else if (!empty_weight)
         // gmm::add(gmm::scaled(t.as_vector(), coeff*alpha1*alpha2), elem);
-      }
+        // Faster than a daxpy blas call on my config
+        add_scaled_4(t, coeff*alpha1*alpha2, elem);
 
       if (finalize) {
         const mesh_fem *pmf1 = mfg1 ? *mfg1 : mfn1;
@@ -4297,64 +4367,40 @@ namespace getfem {
         if (ninf == scalar_type(0)) return 0;
 
         size_type s1 = t.sizes()[0], s2 = t.sizes()[1];
-        size_type cv1 = pmf1 ? ctx1.convex_num() : s1;
-        size_type cv2 = pmf2 ? ctx2.convex_num() : s2;
+        size_type cv1 = ctx1.convex_num(), cv2 = ctx2.convex_num();
         size_type N = 1;
 
         size_type ifirst1 = I1.first(), ifirst2 = I2.first();
-        if (imd1)
-          ifirst1 +=  s1*imd1->filtered_index_of_point(ctx1.convex_num(), ipt);
-        if (imd2)
-          ifirst2 +=  s2*imd2->filtered_index_of_point(ctx2.convex_num(), ipt);
+        if (imd1) ifirst1 +=  s1*imd1->filtered_index_of_point(cv1, ipt);
+        if (imd2) ifirst2 +=  s2*imd2->filtered_index_of_point(cv2, ipt);
 
-        dofs1.assign(s1, ifirst1);
         if (pmf1) {
           if (!(ctx1.is_convex_num_valid())) return 0;
           N = ctx1.N();
-          auto &ct1 = pmf1->ind_scalar_basic_dof_of_element(cv1);
           size_type qmult1 = pmf1->get_qdim();
           if (qmult1 > 1) qmult1 /= pmf1->fem_of_element(cv1)->target_dim();
-          auto itd = dofs1.begin();
-          if (qmult1 == 1) {
-            for (auto itt = ct1.begin(); itt != ct1.end(); ++itt)
-              *itd++ += *itt;
-          } else {
-            for (auto itt = ct1.begin(); itt != ct1.end(); ++itt)
-              for (size_type q = 0; q < qmult1; ++q)
-                *itd++ += *itt + q;
-          }
+          populate_dofs_vector(dofs1, s1, ifirst1, qmult1,        // --> dofs1
+                               pmf1->ind_scalar_basic_dof_of_element(cv1));
         } else
-          for (size_type i=0; i < s1; ++i) dofs1[i] += i;
+          populate_contiguous_dofs_vector(dofs1, s1, ifirst1); // --> dofs1
 
-        if (pmf1 == pmf2 && cv1 == cv2) {
+        if (pmf1 == pmf2 && (pmf1 ? (cv1 == cv2) : (s1 == s2))) {
           if (ifirst1 == ifirst2) {
             add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf*1E-14, N);
           } else {
-            dofs2.resize(dofs1.size());
-            for (size_type i = 0; i < dofs1.size(); ++i)
-              dofs2[i] =  dofs1[i] + ifirst2 - ifirst1;
+            populate_dofs_vector(dofs2, dofs1.size(), ifirst2 - ifirst1, dofs1);
             add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
           }
         } else {
-          dofs2.assign(s2, ifirst2);
           if (pmf2) {
             if (!(ctx2.is_convex_num_valid())) return 0;
             N = std::max(N, ctx2.N());
-            auto &ct2 = pmf2->ind_scalar_basic_dof_of_element(cv2);
             size_type qmult2 = pmf2->get_qdim();
             if (qmult2 > 1) qmult2 /= pmf2->fem_of_element(cv2)->target_dim();
-            auto itd = dofs2.begin();
-            if (qmult2 == 1) {
-              for (auto itt = ct2.begin(); itt != ct2.end(); ++itt)
-                *itd++ += *itt;
-            } else {
-              for (auto itt = ct2.begin(); itt != ct2.end(); ++itt)
-                for (size_type q = 0; q < qmult2; ++q)
-                  *itd++ += *itt + q;
-            }
+            populate_dofs_vector(dofs2, s2, ifirst2, qmult2,        // --> dofs2
+                                 pmf2->ind_scalar_basic_dof_of_element(cv2));
           } else
-            for (size_type i=0; i < s2; ++i) dofs2[i] += i;
-
+            populate_contiguous_dofs_vector(dofs2, s2, ifirst2); // --> dofs2
           add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
         }
       }
@@ -4394,27 +4440,13 @@ namespace getfem {
                     "scalar fems");
       if (ipt == 0) {
         elem.resize(t.size());
-        auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-        scalar_type e = coeff*alpha1*alpha2;
-        size_type nd = ((t.size()) >> 2);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-        }
-        for (; it != ite;) *it++ = (*itt++) * e;
         // gmm::copy(gmm::scaled(t.as_vector(), coeff*alpha1*alpha2), elem);
-      } else {
-        // Faster than a daxpy blas call on my config
-        auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-        scalar_type e = coeff*alpha1*alpha2;
-        size_type nd = ((t.size()) >> 2);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-        }
-        for (; it != ite;) *it++ += (*itt++) * e;
+        copy_scaled_4(t, coeff*alpha1*alpha2, elem);
+      } else
         // gmm::add(gmm::scaled(t.as_vector(), coeff*alpha1*alpha2), elem);
-      }
+        // Faster than a daxpy blas call on my config
+        add_scaled_4(t, coeff*alpha1*alpha2, elem);
+
       if (ipt == nbpt-1) {
         GA_DEBUG_ASSERT(I1.size() && I2.size(), "Internal error");
 
@@ -4425,26 +4457,21 @@ namespace getfem {
         if (cv1 == size_type(-1)) return 0;
         auto &ct1 = pmf1->ind_scalar_basic_dof_of_element(cv1);
         GA_DEBUG_ASSERT(ct1.size() == t.sizes()[0], "Internal error");
-        dofs1.resize(ct1.size());
-        for (size_type i = 0; i < ct1.size(); ++i)
-          dofs1[i] = ct1[i] + I1.first();
+        populate_dofs_vector(dofs1, ct1.size(), I1.first(), ct1);
 
         if (pmf2 == pmf1 && cv1 == cv2) {
           if (I1.first() == I2.first()) {
             add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf*1E-14, N);
           } else {
-            dofs2.resize(dofs1.size());
-            for (size_type i = 0; i < dofs1.size(); ++i)
-              dofs2[i] =  dofs1[i] + I2.first() - I1.first();
+            populate_dofs_vector(dofs2, dofs1.size(), I2.first() - I1.first(),
+                                 dofs1);
             add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
           }
         } else {
           if (cv2 == size_type(-1)) return 0;
           auto &ct2 = pmf2->ind_scalar_basic_dof_of_element(cv2);
           GA_DEBUG_ASSERT(ct2.size() == t.sizes()[1], "Internal error");
-          dofs2.resize(ct2.size());
-          for (size_type i = 0; i < ct2.size(); ++i)
-            dofs2[i] = ct2[i] + I2.first();
+          populate_dofs_vector(dofs2, ct2.size(), I2.first(), ct2);
           add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
         }
       }
@@ -4479,31 +4506,13 @@ namespace getfem {
                         "vector fems");
       if (ipt == 0) {
         elem.resize(t.size());
-        auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-        scalar_type e = coeff*alpha1*alpha2;
-        size_type nd = ((t.size()) >> 3);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-          *it++ = (*itt++) * e; *it++ = (*itt++) * e;
-        }
-        for (; it != ite;) *it++ = (*itt++) * e;
+        copy_scaled_8(t, coeff*alpha1*alpha2, elem);
         // gmm::copy(gmm::scaled(t.as_vector(), coeff*alpha1*alpha2), elem);
-      } else {
-        // (Far) faster than a daxpy blas call on my config.
-        auto itt = t.begin(); auto it = elem.begin(), ite = elem.end();
-        scalar_type e = coeff*alpha1*alpha2;
-        size_type nd = ((t.size()) >> 3);
-        for (size_type i = 0; i < nd; ++i) {
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-          *it++ += (*itt++) * e; *it++ += (*itt++) * e;
-        }
-        for (; it != ite;) *it++ += (*itt++) * e;
+      } else
         // gmm::add(gmm::scaled(t.as_vector(), coeff*alpha1*alpha2), elem);
-      }
+        // (Far) faster than a daxpy blas call on my config.
+        add_scaled_8(t, coeff*alpha1*alpha2, elem);
+
       if (ipt == nbpt-1) {
         GA_DEBUG_ASSERT(I1.size() && I2.size(), "Internal error");
 
@@ -4513,35 +4522,24 @@ namespace getfem {
 
         size_type cv1 = ctx1.convex_num(), cv2 = ctx2.convex_num();
         if (cv1 == size_type(-1)) return 0;
-        auto &ct1 = pmf1->ind_scalar_basic_dof_of_element(cv1);
         size_type qmult1 = pmf1->get_qdim();
         if (qmult1 > 1) qmult1 /= pmf1->fem_of_element(cv1)->target_dim();
-        dofs1.assign(s1, I1.first());
-        auto itd = dofs1.begin();
-        for (auto itt = ct1.begin(); itt != ct1.end(); ++itt)
-          for (size_type q = 0; q < qmult1; ++q)
-            *itd++ += *itt + q;
+        populate_dofs_vector(dofs1, s1, I1.first(), qmult1,         // --> dofs1
+                             pmf1->ind_scalar_basic_dof_of_element(cv1));
 
-        if (pmf2 == pmf1 && cv1 == cv2) {
-          if (I1.first() == I2.first()) {
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf*1E-14, N);
-          } else {
-            dofs2.resize(dofs1.size());
-            for (size_type i = 0; i < dofs1.size(); ++i)
-              dofs2[i] =  dofs1[i] + I2.first() - I1.first();
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
-          }
+        if (pmf2 == pmf1 && cv1 == cv2 && I1.first() == I2.first()) {
+          add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf*1E-14, N);
         } else {
-          if (cv2 == size_type(-1)) return 0;
-          auto &ct2 = pmf2->ind_scalar_basic_dof_of_element(cv2);
-          size_type qmult2 = pmf2->get_qdim();
-          if (qmult2 > 1) qmult2 /= pmf2->fem_of_element(cv2)->target_dim();
-          dofs2.assign(s2, I2.first());
-          itd = dofs2.begin();
-          for (auto itt = ct2.begin(); itt != ct2.end(); ++itt)
-            for (size_type q = 0; q < qmult2; ++q)
-              *itd++ += *itt + q;
-
+          if (pmf2 == pmf1 && cv1 == cv2) {
+            populate_dofs_vector(dofs2, dofs1.size(), I2.first() - I1.first(),
+                                 dofs1);
+          } else {
+            if (cv2 == size_type(-1)) return 0;
+            size_type qmult2 = pmf2->get_qdim();
+            if (qmult2 > 1) qmult2 /= pmf2->fem_of_element(cv2)->target_dim();
+            populate_dofs_vector(dofs2, s2, I2.first(), qmult2,      // --> dofs2
+                                 pmf2->ind_scalar_basic_dof_of_element(cv2));
+          }
           add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf*1E-14, N);
         }
       }
@@ -4603,36 +4601,24 @@ namespace getfem {
         size_type cv1 = ctx1.convex_num(), cv2 = ctx2.convex_num();
         size_type i1 = I1.first(), i2 = I2.first();
         if (cv1 == size_type(-1)) return 0;
-        auto &ct1 = pmf1->ind_scalar_basic_dof_of_element(cv1);
-        dofs1.resize(ss1);
-        for (size_type i = 0; i < ss1; ++i) dofs1[i] = i1 + ct1[i];
+        populate_dofs_vector(dofs1, ss1, i1,
+                             pmf1->ind_scalar_basic_dof_of_element(cv1));
+        bool same_dofs(pmf2 == pmf1 && cv1 == cv2 && i1 == i2);
 
-        if (pmf2 == pmf1 && cv1 == cv2) {
-          if (i1 == i2) {
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf, N);
-          } else {
-            dofs2.resize(ss2);
-            for (size_type i = 0; i < ss2; ++i) dofs2[i] = i2 + ct1[i];
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-          }
-        } else {
+        if (!same_dofs) {
           if (cv2 == size_type(-1)) return 0;
-          auto &ct2 = pmf2->ind_scalar_basic_dof_of_element(cv2);
-          dofs2.resize(ss2);
-          for (size_type i = 0; i < ss2; ++i) dofs2[i] = i2 + ct2[i];
-          add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-          for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-          for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-          add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
+          populate_dofs_vector(dofs2, ss2, i2,
+                               pmf2->ind_scalar_basic_dof_of_element(cv2));
         }
+        std::vector<size_type> &dofs2_ = same_dofs ? dofs1 : dofs2;
+        add_elem_matrix(K, dofs1, dofs2_, dofs1_sort, elem, ninf, N);
+        for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
+        if (!same_dofs) for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
+        add_elem_matrix(K, dofs1, dofs2_, dofs1_sort, elem, ninf, N);
       }
       return 0;
     }
+
     ga_instruction_matrix_assembly_standard_vector_opt10_2
     (const base_tensor &t_, model_real_sparse_matrix &Kn_,
      const fem_interpolation_context &ctx1_,
@@ -4683,47 +4669,29 @@ namespace getfem {
       if (ipt == nbpt-1) {
         GA_DEBUG_ASSERT(I1.size() && I2.size(), "Internal error");
 
-        scalar_type ninf = gmm::vect_norminf(elem)*1E-14;
+        scalar_type ninf = gmm::vect_norminf(elem) * 1E-14;
         if (ninf == scalar_type(0)) return 0;
         size_type N = ctx1.N();
         size_type cv1 = ctx1.convex_num(), cv2 = ctx2.convex_num();
         size_type i1 = I1.first(), i2 = I2.first();
         if (cv1 == size_type(-1)) return 0;
-        auto &ct1 = pmf1->ind_scalar_basic_dof_of_element(cv1);
-        dofs1.resize(ss1);
-        for (size_type i = 0; i < ss1; ++i) dofs1[i] = i1 + ct1[i];
+        populate_dofs_vector(dofs1, ss1, i1,
+                             pmf1->ind_scalar_basic_dof_of_element(cv1));
+        bool same_dofs(pmf2 == pmf1 && cv1 == cv2 && i1 == i2);
 
-        if (pmf2 == pmf1 && cv1 == cv2) {
-          if (i1 == i2) {
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            add_elem_matrix(K, dofs1, dofs1, dofs1_sort, elem, ninf, N);
-          } else {
-            dofs2.resize(ss2);
-            for (size_type i = 0; i < ss2; ++i) dofs2[i] = i2 + ct1[i];
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-            for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-            for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-            add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-          }
-        } else {
+        if (!same_dofs) {
           if (cv2 == size_type(-1)) return 0;
-          auto &ct2 = pmf2->ind_scalar_basic_dof_of_element(cv2);
-          dofs2.resize(ss2);
-          for (size_type i = 0; i < ss2; ++i) dofs2[i] = i2 + ct2[i];
-          add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-          for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-          for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-          add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
-          for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
-          for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
-          add_elem_matrix(K, dofs1, dofs2, dofs1_sort, elem, ninf, N);
+          populate_dofs_vector(dofs2, ss2, i2,
+                               pmf2->ind_scalar_basic_dof_of_element(cv2));
         }
+        std::vector<size_type> &dofs2_ = same_dofs ? dofs1 : dofs2;
+        add_elem_matrix(K, dofs1, dofs2_, dofs1_sort, elem, ninf, N);
+        for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
+        if (!same_dofs) for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
+        add_elem_matrix(K, dofs1, dofs2_, dofs1_sort, elem, ninf, N);
+        for (size_type i = 0; i < ss1; ++i) (dofs1[i])++;
+        if (!same_dofs) for (size_type i = 0; i < ss2; ++i) (dofs2[i])++;
+        add_elem_matrix(K, dofs1, dofs2_, dofs1_sort, elem, ninf, N);
       }
       return 0;
     }
@@ -4779,9 +4747,9 @@ namespace getfem {
       const mesh_fem *mf = workspace.associated_mf(varname);
       if (mf->is_reduced()) {
         auto n = (mf->get_qdim() == 1) ? workspace.qdim(varname) : 1;
-        base_vector U(mf->nb_basic_dof() * n);
+        base_vector &U = gis.really_extended_vars[varname];
+        gmm::resize(U, mf->nb_basic_dof() * n);
         mf->extend_vector(workspace.value(varname), U);
-        gis.really_extended_vars[varname] = U;
         gis.extended_vars[varname] = &(gis.really_extended_vars[varname]);
       } else {
         gis.extended_vars[varname] = &(workspace.value(varname));
