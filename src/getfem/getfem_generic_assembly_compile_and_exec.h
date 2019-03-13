@@ -69,7 +69,9 @@ namespace getfem {
   };
 
   typedef std::shared_ptr<ga_instruction> pga_instruction;
+  typedef std::vector<pga_instruction> ga_instruction_list;
 
+  
   struct gauss_pt_corresp { // For neighbour interpolation transformation
     bgeot::pgeometric_trans pgt1, pgt2;
     papprox_integration pai;
@@ -183,22 +185,25 @@ namespace getfem {
       std::map<std::string, elementary_trans_info> elementary_trans_infos;
       secondary_domain_info secondary_domain_infos;
 
-      std::vector<pga_instruction>
-        begin_instructions,  // Instructions being executed at the first Gauss
-                             // point after a change of integration method only.
-        elt_instructions,    // Instructions executed once per element
-        instructions;        // Instructions executed on each
-                             // integration/interpolation point
+      // Instructions being executed at the first Gauss point after
+      // a change of integration method only.
+      ga_instruction_list begin_instructions;
+      // Instructions executed once per element
+      ga_instruction_list elt_instructions;
+      // Instructions executed on each integration/interpolation point
+      ga_instruction_list instructions;
       std::map<scalar_type, std::list<pga_tree_node> > node_list;
 
-      region_mim_instructions(): m(0), im(0) {}
+    region_mim_instructions(): m(0), im(0) {}
     };
 
     std::list<ga_tree> trees; // The trees are stored mainly because they
                               // contain the intermediary tensors.
     std::list<ga_tree> interpolation_trees;
 
-    std::map<region_mim, region_mim_instructions> all_instructions;
+    typedef std::map<region_mim, region_mim_instructions> instructions_set;
+
+    instructions_set  whole_instructions;
 
     ga_instruction_set() { max_dof = nb_dof = 0; need_elt_size = false; ipt=0; }
   };
