@@ -215,6 +215,10 @@ namespace getfem {
   void ga_interpolation_exec(ga_instruction_set &gis,
                              ga_workspace &workspace,
                              ga_interpolation_context &gic);
+  void ga_interpolation_single_point_exec
+    (ga_instruction_set &gis, ga_workspace &workspace,
+     const fem_interpolation_context &ctx_x, const base_small_vector &Normal,
+     const mesh &interp_mesh);
   
 } /* end of namespace */
 

@@ -7055,6 +7055,30 @@ namespace getfem {
     gic.finalize();
   }
 
+  void ga_interpolation_single_point_exec
+  (ga_instruction_set &gis, ga_workspace &workspace,
+   const fem_interpolation_context &ctx_x, const base_small_vector &Normal,
+   const mesh &interp_mesh) {
+    gis.ctx = ctx_x;
+    gis.Normal = Normal;
+    gmm::clear(workspace.assembled_tensor().as_vector());
+    gis.nbpt = 1;
+    gis.ipt = 0;
+    gis.pai = 0;
+
+    for (auto &&instr : gis.all_instructions) {
+      const getfem::mesh &m = *(instr.second.m);
+      GMM_ASSERT1(&m == &interp_mesh,
+                  "Incompatibility of meshes in interpolation");
+      auto &gilb = instr.second.begin_instructions;
+      for (size_type j = 0; j < gilb.size(); ++j) j += gilb[j]->exec();
+      auto &gile = instr.second.elt_instructions;
+      for (size_type j = 0; j < gile.size(); ++j) j+=gile[j]->exec();
+      auto &gil = instr.second.instructions;
+      for (size_type j = 0; j < gil.size(); ++j) j += gil[j]->exec();
+    }
+  }
+
   void ga_exec(ga_instruction_set &gis, ga_workspace &workspace) {
     base_matrix G1, G2;
     base_small_vector un;
