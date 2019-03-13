@@ -222,14 +222,14 @@ namespace bgeot {
     }
 
     inline void init(size_type i, size_type j, size_type k) {
-      sizes_.resize(3); sizes_[0] = i; sizes_[1] = j; sizes_[2] = k; 
+      sizes_.resize(3); sizes_[0] = i; sizes_[1] = j; sizes_[2] = k;
       coeff.resize(3); coeff[0] = 1; coeff[1] = i; coeff[2] = i*j;
       this->resize(i*j*k);
     }
 
     inline void init(size_type i, size_type j, size_type k, size_type l) {
       sizes_.resize(4);
-      sizes_[0] = i; sizes_[1] = j; sizes_[2] = k; sizes_[3] = k; 
+      sizes_[0] = i; sizes_[1] = j; sizes_[2] = k; sizes_[3] = k;
       coeff.resize(4);
       coeff[0] = 1; coeff[1] = i; coeff[2] = i*j; coeff[3] = i*j*k;
       this->resize(i*j*k*l);
@@ -243,7 +243,7 @@ namespace bgeot {
     { init(i, j, k); }
     inline void adjust_sizes(size_type i, size_type j, size_type k, size_type l)
     { init(i, j, k, l); }
-    
+
     inline size_type adjust_sizes_changing_last(const tensor &t, size_type P) {
       const multi_index &mi = t.sizes_; size_type d = mi.size();
       sizes_.resize(d); coeff.resize(d);
@@ -323,12 +323,11 @@ namespace bgeot {
     }
 
     tensor(const multi_index &c) { init(c); }
-    tensor(size_type i, size_type j)
-    { init(multi_index(i, j)); }
-    tensor(size_type i, size_type j, size_type k)
-    { init(multi_index(i, j, k)); }
+    tensor(size_type i) = delete; // { init(i); }
+    tensor(size_type i, size_type j)  { init(i, j); }
+    tensor(size_type i, size_type j, size_type k) { init(i, j, k); }
     tensor(size_type i, size_type j, size_type k, size_type l)
-    { init(multi_index(i, j, k, l)); }
+    { init(i, j, k, l); }
     tensor() {}
   };
 
@@ -406,7 +405,7 @@ namespace bgeot {
     /* reduction du tenseur t par son indice ni et la matrice m.       */
     DEFINE_STATIC_THREAD_LOCAL(std::vector<T>, tmp);
     DEFINE_STATIC_THREAD_LOCAL(multi_index, mi);
-    
+
     mi = t.sizes();
     size_type dimt = mi[ni], dim = m.ncols();
     GMM_ASSERT2(dimt, "Inconsistent dimension.");
