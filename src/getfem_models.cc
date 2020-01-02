@@ -3168,7 +3168,8 @@ namespace getfem {
       gmm::clear(vecl[0]);
 
       if (expr.size()) {
-        ga_workspace workspace(md, true);
+        // reenables disabled variables
+        ga_workspace workspace(md, ga_workspace::inherit::ALL);
         GMM_TRACE2(name << ": generic source term assembly");
         workspace.add_expression(expr, *(mims[0]), region, 1, secondary_domain);
         workspace.assembly(1);
@@ -3323,7 +3324,8 @@ namespace getfem {
           md.is_var_newer_than_brick(dl[i], ib);
 
       if (recompute_matrix) {
-        ga_workspace workspace(md, true);
+        // reenables disabled variables
+        ga_workspace workspace(md, ga_workspace::inherit::ALL);
         workspace.add_expression(expr, *(mims[0]), region, 2, secondary_domain);
         GMM_TRACE2(name << ": generic matrix assembly");
         workspace.assembly(2);
@@ -3394,8 +3396,8 @@ namespace getfem {
   (model &md, const mesh_im &mim, const std::string &expr, size_type region,
    bool is_sym, bool is_coercive, const std::string &brickname,
    bool return_if_nonlin, const std::string &secondary_domain) {
-
-    ga_workspace workspace(md, true);
+    // reenables disabled variables
+    ga_workspace workspace(md, ga_workspace::inherit::ALL);
     size_type order = workspace.add_expression(expr, mim, region,
                                                2, secondary_domain);
     model::varnamelist vl, vl_test1, vl_test2, dl;
@@ -4891,9 +4893,9 @@ namespace getfem {
    const std::string &Neumannterm,
    const std::string &datagamma0, size_type region, scalar_type theta_,
    const std::string &datag) {
-
     std::string theta = std::to_string(theta_);
-    ga_workspace workspace(md, true);
+    // reenables disabled variables
+    ga_workspace workspace(md, ga_workspace::inherit::ALL);
     size_type order = workspace.add_expression(Neumannterm, mim, region, 1);
     GMM_ASSERT1(order == 0, "Wrong expression of the Neumann term");
     bool is_lin = workspace.is_linear(1);
@@ -4926,8 +4928,8 @@ namespace getfem {
    const std::string &datagamma0, size_type region, scalar_type theta_,
    const std::string &datag) {
     std::string theta = std::to_string(theta_);
-
-    ga_workspace workspace(md, true);
+    // reenables disabled variables
+    ga_workspace workspace(md, ga_workspace::inherit::ALL);
     size_type order = workspace.add_expression(Neumannterm, mim, region, 1);
     GMM_ASSERT1(order == 0, "Wrong expression of the Neumann term");
     bool is_lin = workspace.is_linear(1);
@@ -4959,8 +4961,8 @@ namespace getfem {
    const std::string &datagamma0, size_type region, scalar_type theta_,
    const std::string &datag, const std::string &dataH) {
     std::string theta = std::to_string(theta_);
-
-    ga_workspace workspace(md, true);
+    // reenables disabled variables
+    ga_workspace workspace(md, ga_workspace::inherit::ALL);
     size_type order = workspace.add_expression(Neumannterm, mim, region, 1);
     GMM_ASSERT1(order == 0, "Wrong expression of the Neumann term");
     bool is_lin = workspace.is_linear(1);
@@ -5897,7 +5899,8 @@ namespace getfem {
       }
 
       if (recompute_matrix) {
-        ga_workspace workspace(md, true);
+        // reenables disabled variables
+        ga_workspace workspace(md, ga_workspace::inherit::ALL);
         workspace.add_expression(expr, *(mims[0]), region);
         GMM_TRACE2(name << ": generic matrix assembly");
         workspace.assembly(2);
@@ -5966,8 +5969,8 @@ namespace getfem {
 
     bool is_lin;
     model::varnamelist vl, dl;
-    {
-      ga_workspace workspace(md, true);
+    { // reenables disabled variables
+      ga_workspace workspace(md, ga_workspace::inherit::ALL);
       workspace.add_expression(expr2, mim, region);
       model::varnamelist vl_test1, vl_test2;
       is_lin = workspace.used_variables(vl, vl_test1, vl_test2, dl, 2);
@@ -6001,8 +6004,8 @@ namespace getfem {
       + "+"+mu+"*(Grad_"+varname+"+Grad_"+varname+"'):Grad_"+test_varname;
 
     bool is_lin;
-    {
-      ga_workspace workspace(md, true);
+    { // reenables disabled variables
+      ga_workspace workspace(md, ga_workspace::inherit::ALL);
       workspace.add_expression(expr, mim, region);
       is_lin = workspace.is_linear(2);
     }
@@ -6036,8 +6039,8 @@ namespace getfem {
       + "+"+mu+"*(Grad_"+varname+"+Grad_"+varname+"'):Grad_"+test_varname;
 
     bool is_lin;
-    {
-      ga_workspace workspace(md, true);
+    { // reenables disabled variables
+      ga_workspace workspace(md, ga_workspace::inherit::ALL);
       workspace.add_expression(expr, mim, region);
       is_lin = workspace.is_linear(2);
     }
