@@ -45,6 +45,8 @@ namespace getfem {
   void ga_workspace::add_fem_variable
   (const std::string &name, const mesh_fem &mf,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
+    GMM_ASSERT1(nb_intern_dof == 0 || I.last() < first_intern_dof,
+                "The provided interval overlaps with internal dofs");
     nb_prim_dof = std::max(nb_prim_dof, I.last());
     variables.emplace(name, var_description(true, &mf, 0, I, &VV, 1));
   }
@@ -52,13 +54,29 @@ namespace getfem {
   void ga_workspace::add_im_variable
   (const std::string &name, const im_data &imd,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
+    GMM_ASSERT1(nb_intern_dof == 0 || I.last() <= first_intern_dof,
+                "The provided interval overlaps with internal dofs");
     nb_prim_dof = std::max(nb_prim_dof, I.last());
     variables.emplace(name, var_description(true, 0, &imd, I, &VV, 1));
+  }
+
+  void ga_workspace::add_internal_im_variable
+  (const std::string &name, const im_data &imd,
+   const gmm::sub_interval &I, const model_real_plain_vector &VV) {
+    GMM_ASSERT1(I.first() >= nb_prim_dof,
+                "The provided interval overlaps with primary dofs");
+    nb_intern_dof += first_intern_dof - std::min(first_intern_dof, I.first());
+    first_intern_dof = std::min(first_intern_dof, I.first());
+    nb_intern_dof += first_intern_dof + nb_intern_dof
+                   - std::min(first_intern_dof + nb_intern_dof, I.last());
+    variables.emplace(name, var_description(true, 0, &imd, I, &VV, 1, true));
   }
 
   void ga_workspace::add_fixed_size_variable
   (const std::string &name,
    const gmm::sub_interval &I, const model_real_plain_vector &VV) {
+    GMM_ASSERT1(nb_intern_dof == 0 || I.last() <= first_intern_dof,
+                "The provided interval overlaps with internal dofs");
     nb_prim_dof = std::max(nb_prim_dof, I.last());
     variables.emplace(name, var_description(true, 0, 0, I, &VV,
                                             dim_type(gmm::vect_size(VV))));
@@ -87,6 +105,18 @@ namespace getfem {
     variables.emplace(name, var_description
       (false, 0, &imd, gmm::sub_interval(), &VV,
        gmm::vect_size(VV)/(imd.nb_filtered_index() * imd.nb_tensor_elem())));
+  }
+
+  bool ga_workspace::is_internal_variable(const std::string &name) const {
+
+    if ((md && md->variable_exists(name) && md->is_internal_variable(name)) ||
+        (parent_workspace && parent_workspace->variable_exists(name)
+                          && parent_workspace->is_internal_variable(name)))
+      return true;
+    else {
+      VAR_SET::const_iterator it = variables.find(name);
+      return it == variables.end() ? false : it->second.is_internal;
+    }
   }
 
   bool ga_workspace::variable_exists(const std::string &name) const {
@@ -913,6 +943,7 @@ namespace getfem {
   {
     init();
     nb_prim_dof = with_parent_variables ? md->nb_dof() : 0;
+    nb_intern_dof = 0;
     if (var_inherit == inherit::ALL) { // enable model's disabled variables
       model::varnamelist vlmd;
       md->variable_list(vlmd);
@@ -936,6 +967,7 @@ namespace getfem {
           }
         }
     }
+    first_intern_dof = nb_prim_dof; // dofs are contiguous in getfem::model
   }
   ga_workspace::ga_workspace(const ga_workspace &gaw,
                              const inherit var_inherit)
@@ -946,10 +978,12 @@ namespace getfem {
   {
     init();
     nb_prim_dof = with_parent_variables ? gaw.nb_primary_dof() : 0;
+    nb_intern_dof = with_parent_variables ? gaw.nb_internal_dof() : 0;
+    first_intern_dof = with_parent_variables ? gaw.first_internal_dof() : 0;
   }
   ga_workspace::ga_workspace()
     : md(0), parent_workspace(0), with_parent_variables(false),
-      nb_prim_dof(0), nb_tmp_dof(0)
+      nb_prim_dof(0), nb_intern_dof(0), first_intern_dof(0), nb_tmp_dof(0)
   { init(); }
   ga_workspace::~ga_workspace() { clear_expressions(); }
 
