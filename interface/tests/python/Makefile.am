@@ -73,6 +73,7 @@ TESTS = 						\
 	demo_laplacian.py				\
 	demo_laplacian_HHO.py				\
 	demo_elasticity_HHO.py                          \
+	demo_thermo_elasticity_electrical_coupling.py 	\
 	$(optpy)
 
 AM_TESTS_ENVIRONMENT = \
