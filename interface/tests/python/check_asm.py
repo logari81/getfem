@@ -245,5 +245,5 @@ if (res != "(Hess_u)"):
 
 str = "Diff(u*Div(w),w,3*w)"; print('\nAssembly string "%s" gives:' % str)
 res = gf.asm_expression_analysis(str, mim, md)
-if (res != "(u*((3*Grad_w):[[1,0],[0,1]]))"):
+if (res != "(u*(Trace((3*Grad_w))))"):
   print("Wrong Diff result"); exit(1)

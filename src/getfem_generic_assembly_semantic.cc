@@ -249,15 +249,7 @@ namespace getfem {
           delete pnode; pnode = nullptr;
           tree.copy_node(grad_expr.root, parent, pnode);
           tree.insert_node(pnode, GA_NODE_OP);
-          pnode->parent->op_type = GA_COLON;
-          tree.add_child(pnode->parent, GA_NODE_PARAMS);
-          pga_tree_node pid = pnode->parent->children[1];
-          tree.add_child(pid);
-          tree.add_child(pid);
-          pid->children[0]->node_type = GA_NODE_NAME;
-          pid->children[0]->name = "Id";
-          pid->children[1]->node_type = GA_NODE_CONSTANT;
-          pid->children[1]->init_scalar_tensor(me.dim());
+          pnode->parent->op_type = GA_TRACE;
         }
         break;
       case GA_NODE_INTERPOLATE_VAL_TEST: case GA_NODE_INTERPOLATE_GRAD_TEST:
