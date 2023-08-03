@@ -289,13 +289,13 @@ namespace getfem {
      for gmsh and gid meshes, the mesh nodes are always 3D, so for a 2D mesh
      if remove_last_dimension == true the z-component of nodes will be removed
   */
-  static void import_gmsh_mesh(std::istream& f, mesh& m,
-                               bool add_all_element_type,
-                               std::set<size_type> *lower_dim_convex_rg,
-                               std::map<std::string, size_type> *region_map,
-                               bool remove_last_dimension,
-                               std::map<size_type, std::set<size_type>> *nodal_map,
-                               bool merge_overlapping_nodes)
+  void import_mesh_gmsh(std::istream& f, mesh& m,
+                        bool add_all_element_type,
+                        std::set<size_type> *lower_dim_convex_rg,
+                        std::map<std::string, size_type> *region_map,
+                        bool remove_last_dimension,
+                        std::map<size_type, std::set<size_type>> *nodal_map,
+                        bool merge_overlapping_nodes)
   {
     gmm::stream_standard_locale sl(f);
     // /* print general warning */
@@ -653,12 +653,12 @@ namespace getfem {
               for (auto i : ci.nodes)
                 (*nodal_map)[ci.region].insert(i);
             if (!cvok) { // if the convex is not part of the face of others
-              if (is_node)
+              if (is_node) {
                 if (nodal_map == nullptr)
                   GMM_WARNING2("gmsh import ignored a node id: "
                                << ci.id << " region :" << ci.region <<
                                " point is not added explicitly as an element.");
-              else if (add_all_element_type) {
+              } else if (add_all_element_type) {
                 size_type ic = m.add_convex(ci.pgt, ci.nodes.begin());
                 m.region(ci.region).add(ic);
                 cvok = true;
@@ -690,7 +690,7 @@ namespace getfem {
       GMM_ASSERT1(f.good(), "can't open file " << filename);
       /* throw exceptions when an error occurs */
       f.exceptions(std::ifstream::badbit | std::ifstream::failbit);
-      import_gmsh_mesh(f, m, add_all_element_type, lower_dim_convex_rg, region_map,
+      import_mesh_gmsh(f, m, add_all_element_type, lower_dim_convex_rg, region_map,
                        remove_last_dimension, nodal_map, merge_overlapping_nodes);
       f.close();
     }
@@ -715,7 +715,7 @@ namespace getfem {
 
   supports linear and quadratic elements (quadrilaterals, use 9(or 27)-noded elements)
   */
-  static void import_gid_mesh(std::istream& f, mesh& m,
+  static void import_mesh_gid(std::istream& f, mesh& m,
                               bool merge_overlapping_nodes=false) {
     gmm::stream_standard_locale sl(f);
     /* read the node list */
@@ -874,7 +874,7 @@ namespace getfem {
 
   cdwrite,db,filename,cdb
   */
-  static void import_cdb_mesh(std::istream& f, mesh& m,
+  static void import_mesh_cdb(std::istream& f, mesh& m,
                               size_type imat_filt=size_type(-1),
                               bool merge_overlapping_nodes=false) {
     std::map<size_type, size_type> cdb_node_2_getfem_node;
@@ -1360,7 +1360,7 @@ namespace getfem {
 
 
   /* mesh file from noboite [http://www.distene.com/fr/corp/newsroom16.html] */
-  static void import_noboite_mesh(std::istream& f, mesh& m)
+  static void import_mesh_noboite(std::istream& f, mesh& m)
   {
     using namespace std;
     gmm::stream_standard_locale sl(f);
@@ -1444,10 +1444,10 @@ namespace getfem {
     else  // sinon
       cerr << "Erreur à l'ouverture !" << endl;
 
-    // appeler subroutine import_gid_mesh
+    // appeler subroutine import_mesh_gid
     //import_mesh(const std::string& "noboite_to_GiD.gid", mesh& msh)
     ifstream file1_GiD("noboite_to_GiD.gid", ios::in);
-    import_gid_mesh(file1_GiD, m);
+    import_mesh_gid(file1_GiD, m);
 
     //      return 0;
   }
@@ -1472,7 +1472,7 @@ namespace getfem {
     return x;
   }
 
-  static void import_am_fmt_mesh(std::istream& f, mesh& m) {
+  static void import_mesh_am_fmt(std::istream& f, mesh& m) {
     gmm::stream_standard_locale sl(f);
     /* read the node list */
     std::vector<size_type> tri;
@@ -1498,7 +1498,7 @@ namespace getfem {
 
   triangular/quadrangular 2D meshes
   */
-  static void import_emc2_mesh(std::istream& f, mesh& m) {
+  static void import_mesh_emc2(std::istream& f, mesh& m) {
     gmm::stream_standard_locale sl(f);
     /* read the node list */
     std::vector<size_type> tri;
@@ -1544,20 +1544,25 @@ namespace getfem {
       GMM_ASSERT2(fmt.find(":merge_overlapping_nodes") == std::string::npos,
                            "Invalid mesh format syntax: "+format);
     }
+    if (merge_overlapping_nodes &&
+        bgeot::casecmp(fmt.substr(0,4),"gmsh")!=0 &&
+        bgeot::casecmp(fmt.substr(0,3),"cdb")!=0)
+      GMM_WARNING2("Option merge_overlapping_nodes not supported with " + fmt);
+
     if (bgeot::casecmp(fmt,"gmsh")==0)
-      import_gmsh_mesh(f,m);
+      import_mesh_gmsh(f, m, false, nullptr, nullptr, true, nullptr, merge_overlapping_nodes);
     else if (bgeot::casecmp(fmt,"gmsh_with_lower_dim_elt")==0)
-      import_gmsh_mesh(f,m,true,nullptr,nullptr);
+      import_mesh_gmsh(f, m, true, nullptr, nullptr, true, nullptr, merge_overlapping_nodes);
     else if (bgeot::casecmp(fmt,"gid")==0)
-      import_gid_mesh(f,m);
+      import_mesh_gid(f, m);
     else if (bgeot::casecmp(fmt,"noboite")==0)
-      import_noboite_mesh(f,m);
+      import_mesh_noboite(f, m);
     else if (bgeot::casecmp(fmt,"am_fmt")==0)
-      import_am_fmt_mesh(f,m);
+      import_mesh_am_fmt(f, m);
     else if (bgeot::casecmp(fmt,"emc2_mesh")==0)
-      import_emc2_mesh(f,m);
+      import_mesh_emc2(f, m);
     else if (bgeot::casecmp(fmt,"cdb")==0)
-      import_cdb_mesh(f,m);
+      import_mesh_cdb(f, m, size_type(-1), merge_overlapping_nodes);
     else if (bgeot::casecmp(format.substr(0,4),"cdb:")==0) {
       size_type imat(-1);
       bool success(true);
@@ -1571,7 +1576,7 @@ namespace getfem {
         success = false;
       }
       if (success)
-        import_cdb_mesh(f,m,imat);
+        import_mesh_cdb(f, m, imat, merge_overlapping_nodes);
       else GMM_ASSERT1(false, "cannot import "
                        << format << " mesh type : wrong cdb mesh type input");
     }

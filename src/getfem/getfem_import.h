@@ -174,7 +174,7 @@ namespace getfem {
                         bool remove_last_dimension = true,
                         std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
                         bool merge_overlapping_nodes = false) {
-    import_gmsh_mesh(f, m, false, nullptr, &region_map,
+    import_mesh_gmsh(f, m, false, nullptr, &region_map,
                      remove_last_dimension, nodal_map, merge_overlapping_nodes);
   }
 
