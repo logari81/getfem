@@ -154,11 +154,12 @@ namespace getfem {
                         bool remove_last_dimension = true,
                         std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
                         bool merge_overlapping_nodes = false);
-  void import_mesh_gmsh(const std::string& filename, mesh& m,
-                        std::map<std::string, size_type> &region_map,
-                        bool remove_last_dimension = true,
-                        std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
-                        bool merge_overlapping_nodes = false) {
+  inline void
+  import_mesh_gmsh(const std::string& filename, mesh& m,
+                   std::map<std::string, size_type> &region_map,
+                   bool remove_last_dimension = true,
+                   std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
+                   bool merge_overlapping_nodes = false) {
     import_mesh_gmsh(filename, m, false, nullptr, &region_map,
                      remove_last_dimension, nodal_map, merge_overlapping_nodes);
   }
@@ -169,11 +170,12 @@ namespace getfem {
                         bool remove_last_dimension = true,
                         std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
                         bool merge_overlapping_nodes = false);
-  void import_mesh_gmsh(std::istream& f, mesh& m,
-                        std::map<std::string, size_type> &region_map,
-                        bool remove_last_dimension = true,
-                        std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
-                        bool merge_overlapping_nodes = false) {
+  inline void
+  import_mesh_gmsh(std::istream& f, mesh& m,
+                   std::map<std::string, size_type> &region_map,
+                   bool remove_last_dimension = true,
+                   std::map<size_type, std::set<size_type>> *nodal_map = nullptr,
+                   bool merge_overlapping_nodes = false) {
     import_mesh_gmsh(f, m, false, nullptr, &region_map,
                      remove_last_dimension, nodal_map, merge_overlapping_nodes);
   }
