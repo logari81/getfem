@@ -121,11 +121,12 @@ namespace gmm {
                                FLOATTYPE *recip_pivot_growth,                      \
                                FLOATTYPE *rcond, FLOATTYPE *ferr, FLOATTYPE *berr, \
                                SuperLUStat_t *stats, int *info, KEYTYPE) {         \
-    NAMESPACE::mem_usage_t mem_usage;                                    \
+    mem_usage_t mem_usage;                                                         \
+    GlobalLU_t Glu;                                                                \
     NAMESPACE::FNAME(options, A, perm_c, perm_r, etree, equed, R, C, L,  \
                      U, work, lwork, B, X, recip_pivot_growth, rcond,    \
-                     ferr, berr, &mem_usage, stats, info);               \
-    return mem_usage.for_lu; /* bytes used by the factor storage */     \
+                     ferr, berr, &Glu, &mem_usage, stats, info);         \
+    return mem_usage.for_lu; /* bytes used by the factor storage */      \
   }
 
   DECL_GSSVX(SuperLU_S,sgssvx,float,float)

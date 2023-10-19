@@ -37,7 +37,7 @@ AC_DEFINE_UNQUOTED([PATCH_VERSION],$PATCH_VERSION,[Patch version number])
 
 AC_CONFIG_SRCDIR([install-sh])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS(config.h)
 AX_PREFIX_CONFIG_H(src/getfem/getfem_arch_config.h,GETFEM) 
 AX_PREFIX_CONFIG_H(src/gmm/gmm_arch_config.h,GMM) 
 AC_PREREQ(2.61)
@@ -58,7 +58,7 @@ dnl set the optimization level
 dnl --------------------------
 
 AC_ARG_WITH(optimization,
-	    AC_HELP_STRING([--with-optimization=FLAG],[Set the optimization level (-O3 by default)]),
+	    AS_HELP_STRING([--with-optimization=FLAG],[Set the optimization level (-O3 by default)]),
 	    [with_optimization=$withval],
 	    [with_optimization='-O3']
 	    )	    
@@ -763,84 +763,85 @@ dnl ---------------------------END OF OPENMP-----------------------
 
 
 dnl ------------------------------SuperLU config-------------------------
+require_superlu="auto"
 AC_ARG_ENABLE(superlu,
- [AS_HELP_STRING([--enable-superlu],[turn on/off SuperLU support])],
- [case "${enableval}" in
-   yes) usesuperlu=YES ;;
-   no)  usesuperlu=NO ;;
-   *) AC_MSG_ERROR([bad value ${enableval} for --enable-superlu]) ;;
- esac],[usesuperlu=YES])
+  [AS_HELP_STRING([--enable-superlu], [Enable SuperLU support])],
+  [require_superlu=$enableval],
+  [require_superlu="auto"])
 
-SUPERLU_CPPFLAGS=""
-SUPERLU_SRC=""
-SUPERLU_LIBS=""
-SUPERLU_MAKEFILE=""
+SUPERLU_LIBS="-lsuperlu"
+# the user can override these defaults using --with-superlu=
+AC_ARG_WITH(superlu,
+ [AS_HELP_STRING([--with-superlu=<lib>],[use SuperLU library <lib>])],
+ [case $with_superlu in
+   yes | "")
+     if test "x$require_superlu" = "xno"; then
+       AC_MSG_ERROR([Contradicting arguments between --enable-superlu and --with-superlu.])
+     elif test "x$require_superlu" = "xauto"; then
+       require_superlu="yes"
+     fi;;
+   no)
+     if test "x$require_superlu" = "xyes"; then
+       AC_MSG_ERROR([Contradicting arguments between --enable-superlu and --with-superlu.])
+     elif test "x$require_superlu" = "xauto"; then
+       require_superlu="no"
+     fi;;
+   -* | */* | *.a | *.so | *.so.* | *.o| builtin) SUPERLU_LIBS="$with_superlu";;
+   *) SUPERLU_LIBS=`echo $with_superlu | sed -e 's/^/-l/g;s/ \+/ -l/g'`;;
+  esac]
+)
 
-if test x$usesuperlu = xYES; then
-  echo "Building with SuperLU support (use --enable-superlu=no to disable it)"
-  if test x"$FC" = "x"; then
-    sgemm="sgemm_"
-  else
-    AC_FC_FUNC(sgemm)
-    echo "FC=$FC"
-  fi
-  case $sgemm in
-    sgemm)
-          F77_CALL_C="NOCHANGE";
-          ;;
-    sgemm_)
-          F77_CALL_C="ADD_";
-          ;;
-    SGEMM)
-          F77_CALL_C="UPCASE";
-          ;;
-    sgemm__)
-          F77_CALL_C="ADD__";
-          ;;
-    *)
-          AC_MSG_ERROR(["superlu won't handle this calling convention: sgemm -> $sgemm"])
-          ;;
-  esac
-  SUPERLU_CPPFLAGS="$CPPFLAGS -DUSE_VENDOR_BLAS -DF77_CALL_C=$F77_CALL_C"
-  SUPERLU_SRC="superlu"
-  case $host in
-    *apple*)
-        SUPERLU_LIBS="../$SUPERLU_SRC/libsuperlu.la"
-        ;;
-    *mingw*)
-        SUPERLU_LIBS="../$SUPERLU_SRC/.libs/libsuperlu.a"
-        ;;
-    *)
-        SUPERLU_LIBS="`readlink -f .`/$SUPERLU_SRC/libsuperlu.la"
-        ;;
-  esac
-  SUPERLU_MAKEFILE="$SUPERLU_SRC/Makefile"
+SUPERLUINC=""
+AC_ARG_WITH(superlu-include-dir,
+ [AS_HELP_STRING([--with-superlu-include-dir],[directory in which the superlu/sl*.h headers can be found])],
+ [ if test x$require_superlu = xno; then
+     AC_MSG_ERROR([Inconsistent options for --enable-superlu, --with-superlu and --with-superlu-include-dir.]);
+   else
+     require_superlu="yes"
+     case $withval in
+       -I* ) SUPERLUINC="$withval";;
+       * ) SUPERLUINC="-I$withval";;
+     esac
+   fi;],
+)
+CPPFLAGS="$CPPFLAGS $SUPERLUINC"
+
+if test "x$require_superlu" = "xno"; then
+  echo "Building with SuperLU explicitly disabled";
 else
-  echo "Building without SuperLU support (use --enable-superlu=yes to enable it)"
-  AC_CHECK_LIB([superlu], [dCreate_CompCol_Matrix],[],
-               [AC_MSG_ERROR([SuperLU library not found])])
-
   AC_CHECK_HEADERS(
-  [superlu/colamd.h superlu/slu_Cnames.h \
-   superlu/slu_cdefs.h superlu/slu_ddefs.h superlu/slu_sdefs.h superlu/slu_zdefs.h \
-   superlu/slu_dcomplex.h superlu/slu_scomplex.h],
-  [usesuperlu="YES"],
-  [
-    if test "x$usesuperlu" = "xYES"; then
-      AC_MSG_ERROR([header files of superlu not found. Use --enable-superlu=yes flag]);
-    fi;
-  ])
-
-  SUPERLU_LIBS="-lsuperlu"
-  LIBS="$SUPERLU_LIBS $LIBS"
+    [superlu/slu_Cnames.h superlu/slu_cdefs.h superlu/slu_ddefs.h superlu/slu_sdefs.h superlu/slu_zdefs.h \
+     superlu/slu_dcomplex.h superlu/slu_scomplex.h],
+    [found_superlu="yes"],
+    [ if test "x$require_superlu" = "xyes"; then
+        AC_MSG_ERROR([Header files of SuperLU not found.]);
+      else
+        found_superlu="no"
+      fi;
+    ])
+  if test x$found_superlu = xyes; then
+    save_LIBS="$LIBS";
+    AC_CHECK_LIB([superlu], [dCreate_CompCol_Matrix],[],
+                 [if test "x$require_superlu" = "xyes"; then
+                    AC_MSG_ERROR([SuperLU library not found]);
+                  else
+                    found_superlu="no"
+                  fi;])
+    if test "x$found_superlu" = "xyes"; then
+      echo "Building with SuperLU (use --enable-superlu=no to disable it)"
+      LIBS="$SUPERLU_LIBS $save_LIBS"
+    else
+      SUPERLU_LIBS=""
+      LIBS="$save_LIBS"
+    fi
+  fi
 fi
 
-AC_SUBST([SUPERLU_CPPFLAGS])
-AC_SUBST([SUPERLU_SRC])
+AM_CONDITIONAL(SUPERLU, test x$found_superlu = xyes)
 AC_SUBST([SUPERLU_LIBS])
-AM_CONDITIONAL(USEBLASLITE, test x$HAVE_VENDOR_BLAS = x0)
-echo "Configuration of SuperLU done"
-
+if test "x$found_superlu" = "xyes"; then
+  echo "Configuration of SuperLU done"
+fi
 
 dnl ----------------EXPERIMENTAL PARTS OF THE LIBRARY--------------------
 EXPER=""
@@ -931,6 +932,40 @@ echo "Configuration of qhull done"
 dnl -----------------------------END OF QHULL TEST---------------------------
 
 dnl ------------------------------MUMPS TEST------------------------------
+require_mumps="auto"
+AC_ARG_ENABLE(mumps,
+  [AS_HELP_STRING([--enable-mumps], [Enable MUMPS support])],
+  [require_mumps=$enableval],
+  [require_mumps="auto"])
+
+MUMPS_LIBS=""
+# the user can override these defaults using --with-mumps=
+if test $paralevel -le 1; then # default to the typical naming of the sequential libraries
+  MUMPS_LIBS="-lsmumps_seq -ldmumps_seq -lcmumps_seq -lzmumps_seq"
+else # default to the common name for the parallel libraries (the user can override this using --with-mumps=)
+  MUMPS_LIBS="-lsmumps -ldmumps -lcmumps -lzmumps"
+fi
+
+AC_ARG_WITH(mumps,
+ [AS_HELP_STRING([--with-mumps=<lib>],[use MUMPS library <lib>])],
+ [case $with_mumps in
+   yes | "")
+     if test "x$require_mumps" = "xno"; then
+       AC_MSG_ERROR([Contradicting arguments between --enable-mumps and --with-mumps.])
+     elif test "x$require_mumps" = "xauto"; then
+       require_mumps="yes"
+     fi;;
+   no)
+     if test "x$require_mumps" = "xyes"; then
+       AC_MSG_ERROR([Contradicting arguments between --enable-(par-)mumps and --with-mumps.])
+     elif test "x$require_mumps" = "xauto"; then
+       require_mumps="no"
+     fi;;
+   -* | */* | *.a | *.so | *.so.* | *.o| builtin) MUMPS_LIBS="$with_mumps";;
+   *) MUMPS_LIBS=`echo $with_mumps | sed -e 's/^/-l/g;s/ \+/ -l/g'`;;
+  esac]
+)
+
 MUMPSINC=""
 AC_ARG_WITH(mumps-include-dir,
  [AS_HELP_STRING([--with-mumps-include-dir],[directory in which the dmumps.h header can be found])],
@@ -938,95 +973,50 @@ AC_ARG_WITH(mumps-include-dir,
    -I* ) MUMPSINC="$withval";;
    * ) MUMPSINC="-I$withval";;
   esac],
- [MUMPSINC="-I$GFPREFIX/include"]
 )
 CPPFLAGS="$CPPFLAGS $MUMPSINC"
 
-MUMPS_LIBS=""
-case $host in
-    *mingw*)
-        MUMPS_SEQ_LIBS="-lsmumps -ldmumps -lcmumps -lzmumps -lmumps_common -lmpiseq -lpord"
-        ;;
-    *apple*)
-        MUMPS_SEQ_LIBS="-lsmumps -ldmumps -lcmumps -lzmumps -lmumps_common -lmpiseq -lpord -lgomp"
-        ;;
-    *)
-        MUMPS_SEQ_LIBS="-lsmumps_seq -ldmumps_seq -lcmumps_seq -lzmumps_seq"
-        ;;
-esac
-acx_mumps_ok="no"
-usemumps="no"
-AC_ARG_ENABLE(mumps,
- [AS_HELP_STRING([--enable-mumps],[enable the use of the (sequential) MUMPS library. A direct solver for large sparse linear systems.])],
- [case $enableval in
-   yes | "") usemumps="yes"; acx_mumps_ok="yes"; MUMPS_LIBS="$MUMPS_SEQ_LIBS";;
-   no) usemumps="no";;
-  esac],
- [usemumps="test"; acx_mumps_ok="test"; MUMPS_LIBS="$MUMPS_SEQ_LIBS"]
-)
-
-AC_ARG_ENABLE(par-mumps,
- [AS_HELP_STRING([--enable-par-mumps],[enable the use of the parrallel MUMPS library. A direct solver for large sparse linear systems.])],
- [case $enableval in
-   yes | "") usemumps="yes"; MUMPS_LIBS="-lsmumps -ldmumps -lcmumps -lzmumps";;
-   no) usemumps="no";;
-  esac],
- [if test $paralevel -ge 1; then
-    usemumps="test"; acx_mumps_ok="test"; MUMPS_LIBS="-lsmumps -ldmumps -lcmumps -lzmumps"
-  fi;]
-)
-
-AC_ARG_WITH(mumps,
- [AS_HELP_STRING([--with-mumps=<lib>],[use MUMPS library <lib>])],
- [case $with_mumps in
-   yes | "") usemumps="yes";;
-   no) acx_mumps_ok="no" ;;
-   -* | */* | *.a | *.so | *.so.* | *.o| builtin) MUMPS_LIBS="$with_mumps"; acx_mumps_ok="yes" ;;
-   *) MUMPS_LIBS=`echo $with_mumps | sed -e 's/^/-l/g;s/ \+/ -l/g'` ; usemumps="yes";;
-  esac]
-)
-
 save_LIBS="$LIBS";
-if test "x$usemumps" = "xno" -o "x$acx_mumps_ok" = "xno"; then
+if test "x$require_mumps" = "xno"; then
   echo "Building with MUMPS explicitly disabled";
 else
  AC_SEARCH_LIBS(smumps_c, [`echo $MUMPS_LIBS | sed -e 's/^-l//g;s/ -l/ /g'`],
-   [usemumps="yes"],
-   [if test "x$acx_mumps_ok" = "xyes"; then
+   [found_mumps="yes"],
+   [if test "x$require_mumps" = "xyes"; then
      AC_MSG_ERROR([The function smumps_c couldn't be found in the provided MUMPS libraries.]);
     fi;
-    usemumps="no"]
+    found_mumps="no"]
  )
  AC_SEARCH_LIBS(dmumps_c, [`echo $MUMPS_LIBS | sed -e 's/^-l//g;s/ -l/ /g'`],
-   [usemumps="yes"],
-   [if test "x$acx_mumps_ok" = "xyes"; then
+   [found_mumps="yes"],
+   [if test "x$require_mumps" = "xyes"; then
      AC_MSG_ERROR([The function dmumps_c couldn't be found in the provided MUMPS libraries.]);
     fi;
-    usemumps="no"]
+    found_mumps="no"]
  )
  AC_SEARCH_LIBS(cmumps_c, [`echo $MUMPS_LIBS | sed -e 's/^-l//g;s/ -l/ /g'`],
-   [usemumps="yes"],
-   [if test "x$acx_mumps_ok" = "xyes"; then
+   [found_mumps="yes"],
+   [if test "x$require_mumps" = "xyes"; then
      AC_MSG_ERROR([The function cmumps_c couldn't be found in the provided MUMPS libraries.]);
     fi;
-    usemumps="no"]
+    found_mumps="no"]
  )
  AC_SEARCH_LIBS(zmumps_c, [`echo $MUMPS_LIBS | sed -e 's/^-l//g;s/ -l/ /g'`],
-   [usemumps="yes"],
-   [if test "x$acx_mumps_ok" = "xyes"; then
+   [found_mumps="yes"],
+   [if test "x$require_mumps" = "xyes"; then
      AC_MSG_ERROR([The function zmumps_c couldn't be found in the provided MUMPS libraries.]);
     fi;
-    usemumps="no"]
+    found_mumps="no"]
  )
  AC_CHECK_HEADERS([smumps_c.h dmumps_c.h cmumps_c.h zmumps_c.h],
-   [usemumps="yes"],
-   [if test "x$acx_mumps_ok" = "xyes"; then
+   [found_mumps="yes"],
+   [if test "x$require_mumps" = "xyes"; then
      AC_MSG_ERROR([header file dmumps_c.h not found.]);
     fi;
-    usemumps="no"]
+    found_mumps="no"]
  )
 
- if test "x$usemumps" = "xyes"; then
+ if test "x$found_mumps" = "xyes"; then
    echo "Building with MUMPS (use --enable-mumps=no to disable it)"
    LIBS="$MUMPS_LIBS $save_LIBS"
  else
@@ -1035,9 +1025,11 @@ else
  fi;
 fi;
 
-AM_CONDITIONAL(MUMPS, test x$usemumps = xyes)
+AM_CONDITIONAL(MUMPS, test x$found_mumps = xyes)
 AC_SUBST([MUMPS_LIBS])
-echo "Configuration of MUMPS done"
+if test "x$found_mumps" = "xyes"; then
+  echo "Configuration of MUMPS done"
+fi
 dnl ---------------------------END OF MUMPS TEST--------------------------
 
 dnl ---------------------------METIS--------------------------
@@ -1091,7 +1083,7 @@ AC_SUBST([METIS_LIBS])
 dnl ---------------------------END OF METIS--------------------------
 
 
-AC_CHECK_HEADERS(sys/times.h,[],[SUPERLU_CPPFLAGS="$SUPERLU_CPPFLAGS -DNO_TIMER"])
+AC_CHECK_HEADERS(sys/times.h)
 AC_CHECK_HEADERS(cxxabi.h)
 dnl ---------------------------- CHECK FOR __PRETTY_FUNCTION__ MACRO --------
 AC_CACHE_CHECK([for __PRETTY_FUNCTION__], ac_cv_have_pretty_function, [
@@ -1163,7 +1155,6 @@ AC_CONFIG_FILES(                                                        \
 Makefile                                                                \
 m4/Makefile                                                             \
 cubature/Makefile                                                       \
-$SUPERLU_MAKEFILE                                                       \
 doc/Makefile                                                            \
 doc/sphinx/Makefile                                                     \
 src/Makefile                                                            \
@@ -1245,10 +1236,24 @@ else
   echo "- Qhull not found. Mesh generation will be disabled."
 fi;
 
-if test "x$usemumps" = "xyes"; then
+if test "x$found_superlu" = "xyes"; then
+  echo "- SuperLU found. A direct solver for large sparse linear systems."
+else
+  if test "x$require_superlu" = "xno"; then
+    echo "- Not using the SuperLU library for large sparse linear systems."
+  else
+    echo "- SuperLU not found. Not using the SuperLU library for large sparse linear systems."
+  fi
+fi;
+
+if test "x$found_mumps" = "xyes"; then
   echo "- Mumps found. A direct solver for large sparse linear systems."
 else
-  echo "- Mumps not found. Not using the MUMPS library for large sparse linear systems."
+  if test "x$require_superlu" = "xno"; then
+    echo "- Not using the MUMPS library for large sparse linear systems."
+  else
+    echo "- Mumps not found. Not using the MUMPS library for large sparse linear systems."
+  fi
 fi;
 
 if test x"$acx_lapack_ok" = xyes; then
