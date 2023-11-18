@@ -158,7 +158,6 @@ nobase_include_HEADERS =                		\
 	getfem/getfem_nonlinear_elasticity.h      	\
 	getfem/getfem_fourth_order.h              	\
 	getfem/getfem_Navier_Stokes.h             	\
-	getfem/getfem_superlu.h		   		\
 	getfem/getfem_plasticity.h                	\
 	getfem/getfem_omp.h                             \
 	getfem/getfem_continuation.h                    \
@@ -190,7 +189,6 @@ SRC =                                      		\
 	bgeot_ftool.cc                     		\
 	getfem_models.cc                 		\
 	getfem_model_solvers.cc                		\
-	getfem_superlu.cc		   		\
 	getfem_mesh.cc                     		\
 	getfem_mesh_region.cc              		\
 	getfem_context.cc                 		\
@@ -246,6 +244,11 @@ SRC =                                      		\
 	getfem_im_data.cc                   		\
 	getfem_continuation.cc
 #	getfem_enumeration_dof_para.cc
+
+if SUPERLU
+nobase_include_HEADERS += getfem/getfem_superlu.h
+SRC +=	getfem_superlu.cc
+endif
 
 getfem/getfem_im_list.h : ../cubature/getfem_im_list.h 
 	cp ../cubature/getfem_im_list.h getfem/getfem_im_list.h

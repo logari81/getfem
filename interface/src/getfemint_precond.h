@@ -52,7 +52,7 @@ namespace getfemint {
     size_type ncols(void) const { return gsp ? gsp->ncols() : ncols_; }
     void set_dimensions(size_type m, size_type n) { nrows_ = m; ncols_ = n; }
     gprecond_base() : nrows_(0), ncols_(0), type(IDENTITY), gsp(0) {}
-    const char *name() const { 
+    const char *name() const {
       const char *p[] = { "IDENTITY", "DIAG", "ILDLT", "ILDLTT", "ILU", "ILUT",
 			  "SUPERLU", "GSPARSE" };
       return p[type];
@@ -69,7 +69,9 @@ namespace getfemint {
     std::unique_ptr<gmm::ildltt_precond<cscmat> > ildltt;
     std::unique_ptr<gmm::ilu_precond<cscmat> > ilu;
     std::unique_ptr<gmm::ilut_precond<cscmat> > ilut;
+#if defined(GETFEM_USES_SUPERLU)
     std::unique_ptr<gmm::SuperLU_factor<T> > superlu;
+#endif
 
     virtual size_type memsize() const {
       size_type sz = sizeof(*this);
@@ -81,10 +83,15 @@ namespace getfemint {
       case ILDLT:   sz += ildlt->memsize(); break;
       case ILDLTT:  sz += ildltt->memsize(); break;
       case SUPERLU:
-	sz += size_type(superlu->memsize()); break;
+#if defined(GETFEM_USES_SUPERLU)
+        sz += size_type(superlu->memsize());
+#else
+        GMM_ASSERT1(false, "GetFEM built without SuperLU support");
+#endif
+        break;
       case SPMAT:   sz += gsp->memsize(); break;
       }
-      return sz; 
+      return sz;
     }
   };
 
@@ -120,28 +127,32 @@ namespace gmm {
     switch (precond.type) {
       case getfemint::gprecond_base::IDENTITY: gmm::copy(v,w); break;
       case getfemint::gprecond_base::DIAG:
-	gmm::mult(*precond.diagonal, v, w);
-	break;
-      case getfemint::gprecond_base::ILDLT: 
-        if (do_mult) gmm::mult(*precond.ildlt, v, w); 
+        gmm::mult(*precond.diagonal, v, w);
+        break;
+      case getfemint::gprecond_base::ILDLT:
+        if (do_mult) gmm::mult(*precond.ildlt, v, w);
         else gmm::transposed_mult(*precond.ildlt, v, w);
         break;
-      case getfemint::gprecond_base::ILDLTT: 
-        if (do_mult) gmm::mult(*precond.ildltt, v, w); 
+      case getfemint::gprecond_base::ILDLTT:
+        if (do_mult) gmm::mult(*precond.ildltt, v, w);
         else gmm::transposed_mult(*precond.ildltt, v, w);
         break;
-      case getfemint::gprecond_base::ILU: 
-        if (do_mult) gmm::mult(*precond.ilu, v, w); 
+      case getfemint::gprecond_base::ILU:
+        if (do_mult) gmm::mult(*precond.ilu, v, w);
         else gmm::transposed_mult(*precond.ilu, v, w);
         break;
-      case getfemint::gprecond_base::ILUT: 
-        if (do_mult) gmm::mult(*precond.ilut, v, w); 
+      case getfemint::gprecond_base::ILUT:
+        if (do_mult) gmm::mult(*precond.ilut, v, w);
         else gmm::transposed_mult(*precond.ilut, v, w);
         break;
       case getfemint::gprecond_base::SUPERLU:
-	if (do_mult) precond.superlu->solve(w,v);
-	else precond.superlu->solve(w,v,gmm::SuperLU_factor<T>::LU_TRANSP);
-	break;
+#if defined(GETFEM_USES_SUPERLU)
+        if (do_mult) precond.superlu->solve(w,v);
+        else precond.superlu->solve(w,v,gmm::SuperLU_factor<T>::LU_TRANSP);
+#else
+        GMM_ASSERT1(false, "GetFEM built without SuperLU support");
+#endif
+        break;
       case getfemint::gprecond_base::SPMAT:
 	precond.gsp->mult_or_transposed_mult(v, w, !do_mult);
         break;

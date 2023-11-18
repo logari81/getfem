@@ -283,8 +283,10 @@ bool laplacian_problem::solve(void) {
     // gmm::cg(SM, U, B, P, iter);
     gmm::gmres(SM, U, B, P, 50, iter);
   } else {
-    double rcond; 
+    double rcond;
+#ifdef GETFEM_USES_SUPERLU
     gmm::SuperLU_solve(SM, U, B, rcond); 
+#endif
     cout << "cond = " << 1/rcond << "\n";
   }
   

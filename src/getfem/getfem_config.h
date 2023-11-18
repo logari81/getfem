@@ -167,6 +167,10 @@
 #define GETFEM_MPI_INIT(argc, argv) {GMM_TRACE1("Running sequential Getfem");}
 #define GETFEM_MPI_FINALIZE {}
 
+#if defined(HAVE_SUPERLU_SLU_CNAMES_H)
+# define GETFEM_USES_SUPERLU
+#endif
+
 #if defined(GETFEM_HAVE_DMUMPS_C_H)
 # ifndef GMM_USES_MUMPS
 #   define GMM_USES_MUMPS
@@ -211,7 +215,10 @@
 
 #include "bgeot_tensor.h"
 #include "bgeot_poly.h"
+
+#if defined(GETFEM_USES_SUPERLU)
 #include "getfem_superlu.h"
+#endif
 
 /// GEneric Tool for Finite Element Methods.
 namespace getfem {

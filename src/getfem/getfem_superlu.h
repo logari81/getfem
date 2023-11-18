@@ -38,12 +38,11 @@
    does not include any of the superlu headers, hence when getfem is
    installed, it does not need to install the superlu headers.
 */
+#ifdef GETFEM_USES_SUPERLU
 
-#ifndef GETFEM_SUPERLU
-#define GETFEM_SUPERLU
-#ifndef GMM_USES_SUPERLU
-#define GMM_USES_SUPERLU
-#endif
+#ifndef GETFEM_SUPERLU_H
+#define GETFEM_SUPERLU_H
+
 #include "getfem_config.h"
 #include "gmm/gmm_kernel.h"
 
@@ -127,4 +126,5 @@ namespace gmm {
 
 extern "C" void set_superlu_callback(int (*cb)());
 
+#endif
 #endif
