@@ -807,6 +807,7 @@ AC_ARG_WITH(superlu-include-dir,
 CPPFLAGS="$CPPFLAGS $SUPERLUINC"
 
 if test "x$require_superlu" = "xno"; then
+  SUPERLU_LIBS=""
   echo "Building with SuperLU explicitly disabled";
 else
   AC_CHECK_HEADERS(
@@ -834,6 +835,11 @@ else
       SUPERLU_LIBS=""
       LIBS="$save_LIBS"
     fi
+  elif test "x$require_superlu" = "xyes"; then
+    AC_MSG_ERROR([SuperLU header files not found but required by the user. Aborting configure...]);
+  else
+    echo "SuperLU header files not found, building without SuperLU"
+    SUPERLU_LIBS=""
   fi
 fi
 
