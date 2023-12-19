@@ -642,7 +642,7 @@ namespace getfem {
         return std::make_shared<linear_solver_mumps_sym<MATRIX, VECTOR>>();
       else
         return std::make_shared<linear_solver_mumps<MATRIX, VECTOR>>();
-# elif definded(GETFEM_USES_SUPERLU)
+# elif defined(GETFEM_USES_SUPERLU)
       return std::make_shared<linear_solver_superlu<MATRIX, VECTOR>>();
 # else
       static_assert(false,
