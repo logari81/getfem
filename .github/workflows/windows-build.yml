@@ -18,7 +18,6 @@ jobs:
       uses: neelravi/intel-oneapi-github-actions@latest
       with:
         components: 'mkl,fortran'
-        platform: 'windows'
         
     - name: Setup Python
       uses: actions/setup-python@v4
