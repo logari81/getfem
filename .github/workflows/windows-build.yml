@@ -12,28 +12,30 @@ jobs:
   build:
     # this includes the MSVC compiler
     runs-on: windows-latest
-    
+
     steps:
     - name: Setup Intel oneAPI
-      uses: neelravi/intel-oneapi-github-actions@latest
+      uses: fortran-lang/setup-fortran@v1
+      id: setup-fortran
       with:
-        components: 'mkl,fortran'
-        
+        compiler: 'intel'
+        version: 'latest'
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
         architecture: 'x64'
-        
+
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
         pip install numpy
         python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
-        
+
     - name: Install CMake and Ninja
       uses: lukka/get-cmake@latest
-      
+
     - name: Set up Intel environment
       run: |
         # Set up environment variables for Intel compilers
