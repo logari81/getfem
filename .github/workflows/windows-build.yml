@@ -15,9 +15,9 @@ jobs:
     
     steps:
     - name: Setup Intel oneAPI
-      uses: intel/oneapi-ci@2024.1
+      uses: neelravi/intel-oneapi-github-actions@latest
       with:
-        components: 'mkl,compiler'
+        components: 'mkl,fortran'
         platform: 'windows'
         
     - name: Setup Python
