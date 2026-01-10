@@ -30,7 +30,7 @@ jobs:
     - name: Set up Intel environment
       run: |
         # Set up environment variables for Intel compilers
-        call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
+        cmd.exe "/K" '"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" && powershell'
         # Verify Intel tools are accessible
         ifx --version
         echo "MKLROOT: $env:MKLROOT"
