@@ -22,7 +22,7 @@ jobs:
         # Download the file
         curl.exe --output "$TempDir\webimage.exe" --url $URL --retry 5 --retry-delay 5
         # Extract the installer
-        Start-Process -Wait -NoNewWindow "$TempDir\webimage.exe" -ArgumentList "-s -x -f `"$TempDir\webimage_extracted`" --log `"$TempDir\extract.log`""
+        & "$TempDir\webimage.exe" -s -x -f "$TempDir\webimage_extracted" --log "$TempDir\extract.log"
         # Delete the downloaded installer
         Remove-Item -Path "$TempDir\webimage.exe"
         # Run the installer
