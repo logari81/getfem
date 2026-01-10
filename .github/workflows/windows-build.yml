@@ -2,7 +2,7 @@ name: Windows Build
 
 on:
   push:
-    branches: [ add-ci-workflow]
+    branches: [ add-ci-workflow ]
 
 env:
   INSTALL_PREFIX: 'C:\opt'
@@ -15,20 +15,18 @@ jobs:
 
     steps:
     - name: Setup Intel oneAPI
-      uses: fortran-lang/setup-fortran@v1
-      id: setup-fortran
-      with:
-        compiler: 'intel'
-        version: '2025.0'
-
-    - name: Install Python dependencies
+      shell: pwsh
       run: |
-        python -m pip install --upgrade pip
-        pip install numpy
-        python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
-
-    - name: Set up Intel environment
-      run: |
+        $URL = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b626b5cf-8a15-40a4-be9a-9edabbb7cf17/intel-fortran-essentials-2025.3.0.333_offline.exe"
+        $TempDir = $env:TEMP
+        # Download the file
+        curl.exe --output "$TempDir\webimage.exe" --url $URL --retry 5 --retry-delay 5
+        # Extract the installer
+        Start-Process -Wait -NoNewWindow "$TempDir\webimage.exe" -ArgumentList "-s -x -f `"$TempDir\webimage_extracted`" --log `"$TempDir\extract.log`""
+        # Delete the downloaded installer
+        Remove-Item -Path "$TempDir\webimage.exe"
+        # Run the installer
+        & "$TempDir\webimage_extracted\bootstrapper.exe" -s --action install --components=default --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir
         # Set up environment variables for Intel compilers
         cmd.exe "/K" '"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" && powershell'
         # Verify Intel tools are accessible
@@ -37,19 +35,28 @@ jobs:
         dir "C:\Program Files (x86)\Intel\oneAPI\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\"
-        
+
+    - name: Install Python dependencies
+      shell: pwsh
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy
+        python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
+
     - name: Create installation directory
+      shell: pwsh
       run: |
         if not exist "$env:INSTALL_PREFIX" mkdir $env:INSTALL_PREFIX
 
     - name: Build MUMPS
+      shell: pwsh
       run: |
         # Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
         cd mumps
         cmake -B build `
-          -Dparallel=OFF `
+          -DMUMPS_parallel=OFF `
           -DBUILD_COMPLEX=ON `
           -DBUILD_COMPLEX16=ON `
           -G Ninja `
@@ -59,8 +66,9 @@ jobs:
         cmake --build build
         cmake --install build
         cd ..
-        
+
     - name: Build Qhull
+      shell: pwsh
       run: |
         # Build Qhull
         echo "Building Qhull..."
@@ -79,6 +87,7 @@ jobs:
       uses: actions/checkout@v4
 
     - name: Build and install GetFEM
+      shell: pwsh
       run: |
         echo "Building GetFEM..."
         #cd getfem
@@ -96,8 +105,9 @@ jobs:
           -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt.lib"
         cmake --build build
         cmake --install build
-        
+
     - name: Verify installations
+      shell: pwsh
       run: |
         echo "Verifying installed libraries..."
         dir "C:\opt\lib"
