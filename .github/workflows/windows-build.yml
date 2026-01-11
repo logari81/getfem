@@ -24,10 +24,11 @@ jobs:
         dir "C:\Program Files (x86)\Intel\oneAPI\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\"
+        dir "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin\"
         # Set up environment variables for Intel compilers
         cmd.exe "/K" '"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" && powershell'
         # Verify Intel tools are accessible
-        ifx /what
+        #ifx /what
         echo "MKLROOT: $env:MKLROOT"
 
     - name: Install Python dependencies
