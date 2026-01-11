@@ -120,7 +120,7 @@ jobs:
       shell: pwsh
       run: |
         echo "Building GetFEM..."
-        echo "MKLROOT: $env:MKLROOT"
+        echo "MKLROOT: ${{ env:MKLROOT }}"
         #cd getfem
         cmake -B build `
           -G Ninja `
