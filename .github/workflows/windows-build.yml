@@ -15,7 +15,7 @@ jobs:
 
     steps:
     - name: Create installation directory
-      shell: powershell
+      shell: pwsh
       run: |
         If(!(test-path -PathType container $env:INSTALL_PREFIX))
         {
@@ -27,7 +27,7 @@ jobs:
 #        Start-Process -Wait -FilePath "$TempDir\intel-dpcpp-cpp-compiler.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
 
     - name: Intall Intel Fortran Essentials
-      shell: powershell
+      shell: pwsh
       run: |
         $URL1 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/79e069e4-f844-43df-8d73-3674c024b043/intel-fortran-compiler-2025.3.1.15_offline.exe"
         $URL3 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ae5e7015-6604-4fa2-804f-596f675804cc/intel-onemkl-2025.3.0.460_offline.exe"
@@ -51,7 +51,7 @@ jobs:
 #        echo "MKLROOT:" %MKLROOT%
 
 #    - name: Install Python dependencies
-#      shell: powershell
+#      shell: pwsh
 #      run: |
 #        python -m pip install --upgrade pip
 #        pip install numpy
@@ -85,7 +85,7 @@ jobs:
       uses: ilammy/msvc-dev-cmd@v1
 
     - name: Build Qhull
-      shell: powershell
+      shell: pwsh
       run: |
         # Build Qhull
         echo "Building Qhull..."
@@ -101,15 +101,23 @@ jobs:
         cd ..
 
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
 
-    - name: Build and install GetFEM
-      shell: powershell
+    - name: Set up Python
+      uses: actions/setup-python@v5  # Official action for Python setup
+      with:
+        python-version: '3.14'  # Specify your exact or semantic version here
+    - name: Install numpy
+      shell: pwsh
       run: |
-        echo "Installing numpy"
         python -m pip install --upgrade pip
         pip install numpy
+        python -c "import sys; print(sys.version)"
         python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
+
+    - name: Build and install GetFEM
+      shell: pwsh
+      run: |
         echo "Building GetFEM..."
         #cd getfem
         cmake -B build `
@@ -128,7 +136,7 @@ jobs:
         cmake --install build
 
     - name: Verify installations
-      shell: powershell
+      shell: pwsh
       run: |
         echo "Verifying installed libraries..."
         dir "C:\opt\lib"
