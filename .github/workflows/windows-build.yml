@@ -20,7 +20,7 @@ jobs:
         $URL = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b626b5cf-8a15-40a4-be9a-9edabbb7cf17/intel-fortran-essentials-2025.3.0.333_offline.exe"
         $TempDir = $env:TEMP
         curl.exe --output "$TempDir\webimage.exe" --url $URL --retry 5 --retry-delay 5
-        & "$TempDir\webimage.exe" -s --action install --components=default --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir
+        Start-Process -Wait -FilePath "$TempDir\webimage.exe" -ArgumentList "-s --action install --components=default --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
         dir "C:\Program Files (x86)\Intel\oneAPI\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\"
