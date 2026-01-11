@@ -132,8 +132,8 @@ jobs:
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
           -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
-          -DBLAS_LIBRARIES="${{ env:MKLROOT }}\lib\intel64\mkl_rt.lib" `
-          -DLAPACK_LIBRARIES="${{ env:MKLROOT }}\lib\intel64\mkl_rt.lib"
+          -DBLAS_LIBRARIES="${{ env.MKLROOT }}\lib\intel64\mkl_rt.lib" `
+          -DLAPACK_LIBRARIES="${{ env.MKLROOT }}\lib\intel64\mkl_rt.lib"
         cmake --build build
         cmake --install build
 
