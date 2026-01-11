@@ -22,7 +22,7 @@ jobs:
           New-Item -ItemType Directory -Path $env:INSTALL_PREFIX
         }
 
-    - name: Setup Intel oneAPI
+    - name: Intall Intel Fortran Essentials
       shell: powershell
       run: |
         $URL = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/b626b5cf-8a15-40a4-be9a-9edabbb7cf17/intel-fortran-essentials-2025.3.0.333_offline.exe"
@@ -33,10 +33,14 @@ jobs:
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\"
         dir "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\"
         dir "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin\"
+
+    - name: Setup Intel OneAPI
+      shell: cmd
+      run: |
         # Set up environment variables for Intel compilers
-        cmd.exe "/K" '"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" && powershell'
+        call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         # Verify Intel tools are accessible
-        #ifx /what
+        ifx /what
         echo "MKLROOT: $env:MKLROOT"
 
     - name: Install Python dependencies
