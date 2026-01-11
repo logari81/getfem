@@ -65,6 +65,7 @@ jobs:
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
+        echo "MKLROOT=%MKLROOT%" >> %GITHUB_ENV%
         REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
@@ -119,6 +120,7 @@ jobs:
       shell: pwsh
       run: |
         echo "Building GetFEM..."
+        echo "MKLROOT: $env:MKLROOT"
         #cd getfem
         cmake -B build `
           -G Ninja `
@@ -130,8 +132,8 @@ jobs:
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
           -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
-          -DBLAS_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt.lib" `
-          -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt.lib"
+          -DBLAS_LIBRARIES="${{ env:MKLROOT }}\lib\intel64\mkl_rt.lib" `
+          -DLAPACK_LIBRARIES="${{ env:MKLROOT }}\lib\intel64\mkl_rt.lib"
         cmake --build build
         cmake --install build
 
