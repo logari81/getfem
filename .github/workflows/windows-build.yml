@@ -37,11 +37,11 @@ jobs:
     - name: Setup Intel OneAPI
       shell: cmd
       run: |
-        # Set up environment variables for Intel compilers
+        REM Set up environment variables for Intel compilers
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
-        # Verify Intel tools are accessible
+        REM Verify Intel tools are accessible
         ifx /what
-        echo "MKLROOT: $env:MKLROOT"
+        echo "MKLROOT:" %MKLROOT%
 
     - name: Install Python dependencies
       shell: powershell
