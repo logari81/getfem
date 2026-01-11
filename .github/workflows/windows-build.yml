@@ -50,12 +50,12 @@ jobs:
 #        echo "FC:" %FC%
 #        echo "MKLROOT:" %MKLROOT%
 
-    - name: Install Python dependencies
-      shell: powershell
-      run: |
-        python -m pip install --upgrade pip
-        pip install numpy
-        python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
+#    - name: Install Python dependencies
+#      shell: powershell
+#      run: |
+#        python -m pip install --upgrade pip
+#        pip install numpy
+#        python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
 
 #        "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\env\vars.bat"
 #        "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
@@ -106,6 +106,10 @@ jobs:
     - name: Build and install GetFEM
       shell: powershell
       run: |
+        echo "Installing numpy"
+        python -m pip install --upgrade pip
+        pip install numpy
+        python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
         echo "Building GetFEM..."
         #cd getfem
         cmake -B build `
