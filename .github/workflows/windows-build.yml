@@ -57,24 +57,25 @@ jobs:
         pip install numpy
         python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
 
+#        "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\env\vars.bat"
+#        "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
     - name: Build MUMPS
       shell: cmd
       run: |
-        "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\env\vars.bat"
-        "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
+        "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
-        # Build MUMPS with Intel Fortran
+        REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
         cd mumps
-        cmake -B build `
-          -DMUMPS_parallel=OFF `
-          -DBUILD_COMPLEX=ON `
-          -DBUILD_COMPLEX16=ON `
-          -G Ninja `
-          -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
-          -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
+        cmake -B build^
+          -DMUMPS_parallel=OFF^
+          -DBUILD_COMPLEX=ON^
+          -DBUILD_COMPLEX16=ON^
+          -G Ninja^
+          -DCMAKE_BUILD_TYPE="%BUILD_TYPE%"^
+          -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"^
           -DCMAKE_Fortran_COMPILER=ifx
         cmake --build build
         cmake --install build
