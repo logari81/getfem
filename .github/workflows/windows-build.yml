@@ -62,20 +62,20 @@ jobs:
     - name: Build MUMPS
       shell: cmd
       run: |
-        "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
+        call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
         REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
         cd mumps
-        cmake -B build^
-          -DMUMPS_parallel=OFF^
-          -DBUILD_COMPLEX=ON^
-          -DBUILD_COMPLEX16=ON^
-          -G Ninja^
-          -DCMAKE_BUILD_TYPE="%BUILD_TYPE%"^
-          -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%"^
+        cmake -B build ^
+          -DMUMPS_parallel=OFF ^
+          -DBUILD_COMPLEX=ON ^
+          -DBUILD_COMPLEX16=ON ^
+          -G Ninja ^
+          -DCMAKE_BUILD_TYPE="%BUILD_TYPE%" ^
+          -DCMAKE_INSTALL_PREFIX="%INSTALL_PREFIX%" ^
           -DCMAKE_Fortran_COMPILER=ifx
         cmake --build build
         cmake --install build
