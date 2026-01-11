@@ -14,6 +14,14 @@ jobs:
     runs-on: windows-latest
 
     steps:
+    - name: Create installation directory
+      shell: powershell
+      run: |
+        If(!(test-path -PathType container $env:INSTALL_PREFIX))
+        {
+          New-Item -ItemType Directory -Path $env:INSTALL_PREFIX
+        }
+
     - name: Setup Intel oneAPI
       shell: powershell
       run: |
@@ -37,11 +45,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install numpy
         python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
-
-    - name: Create installation directory
-      shell: powershell
-      run: |
-        if not exist "$env:INSTALL_PREFIX" mkdir $env:INSTALL_PREFIX
 
     - name: Build MUMPS
       shell: powershell
