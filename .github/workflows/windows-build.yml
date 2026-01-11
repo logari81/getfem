@@ -40,7 +40,7 @@ jobs:
         REM Set up environment variables for Intel compilers
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         REM Verify Intel tools are accessible
-        ifx /what
+        echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
 
     - name: Install Python dependencies
