@@ -71,7 +71,6 @@ jobs:
     - name: Build Qhull
       shell: pwsh
       run: |
-        echo "MKLROOT: $env:MKLROOT"
         # Build Qhull
         echo "Building Qhull..."
         git clone https://github.com/qhull/qhull.git
@@ -80,8 +79,7 @@ jobs:
         cmake -B build `
           -G Ninja `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
-          -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
-          -D_CRT_SECURE_NO_WARNINGS
+          -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}"
         cmake --build build
         cmake --install build
         cd ..
@@ -112,6 +110,7 @@ jobs:
           -DGENERATE_GETFEM_IM_LIST_H=OFF `
           -DENABLE_MULTITHREADED_BLAS=ON `
           -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
+          -D_CRT_SECURE_NO_WARNINGS `
           -DMUMPS_LIB_DIR="${{ env.INSTALL_PREFIX }}\lib" `
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
