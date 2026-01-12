@@ -103,7 +103,8 @@ jobs:
       shell: cmd
       run: |
         echo "Building GetFEM..."
-        call ""%MKLROOT%\env\vars.bat""
+        echo "%MKLROOT%\env\vars.bat"
+        call "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
         cmake -B build ^
           -G Ninja ^
           -DENABLE_PYTHON=ON ^
