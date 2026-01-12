@@ -104,6 +104,7 @@ jobs:
       run: |
         echo "Building GetFEM..."
         #cd getfem
+        & $env:COMSPEC /c "`"${MKLROOT}\env\vars.bat`" && pwsh"
         cmake -B build `
           -G Ninja `
           -DENABLE_PYTHON=ON `
@@ -114,10 +115,11 @@ jobs:
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
           -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
-          -DBLAS_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt" `
-          -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt"
+          -DBLA_VENDOR=Intel10_64lp_seq
         cmake --build build
         cmake --install build
+#          -DBLAS_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt" `
+#          -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt"
 
     - name: Verify installations
       shell: pwsh
