@@ -17,9 +17,9 @@ jobs:
     - name: Create installation directory
       shell: pwsh
       run: |
-        If(!(test-path -PathType container $env:INSTALL_PREFIX))
+        If(!(test-path -PathType container ${{ env.INSTALL_PREFIX }}))
         {
-          New-Item -ItemType Directory -Path $env:INSTALL_PREFIX
+          New-Item -ItemType Directory -Path ${{ env.INSTALL_PREFIX }}
         }
 
 #        $URL2 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/0f85f30e-7b8b-4ad6-8465-8cbc6048525d/intel-dpcpp-cpp-compiler-2025.3.1.15_offline.exe"
@@ -47,9 +47,7 @@ jobs:
       shell: cmd
       run: |
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
-        echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
-        echo "%GITHUB_ENV%"
         echo "MKLROOT="%MKLROOT% >> "%GITHUB_ENV%"
         REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
@@ -92,7 +90,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5  # Official action for Python setup
       with:
-        python-version: '3.14'  # Specify your exact or semantic version here
+        python-version: '3.14'
     - name: Install numpy
       shell: pwsh
       run: |
@@ -105,7 +103,7 @@ jobs:
       shell: pwsh
       run: |
         echo "Building GetFEM..."
-        echo "MKLROOT: ${{ env.MKLROOT }}"
+        echo "MKLROOT: $env:MKLROOT"
         #cd getfem
         cmake -B build `
           -G Ninja `
@@ -117,8 +115,8 @@ jobs:
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
           -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
-          -DBLAS_LIBRARIES="${{ env.MKLROOT }}\lib\intel64\mkl_rt.lib" `
-          -DLAPACK_LIBRARIES="${{ env.MKLROOT }}\lib\intel64\mkl_rt.lib"
+          -DBLAS_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt.lib" `
+          -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt.lib"
         cmake --build build
         cmake --install build
 
