@@ -49,7 +49,8 @@ jobs:
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         echo "FC:" %FC%
         echo "MKLROOT:" %MKLROOT%
-        (echo "MKLROOT="%MKLROOT%) >> "%GITHUB_ENV%"
+        echo "%GITHUB_ENV%"
+        echo "MKLROOT="%MKLROOT% >> "%GITHUB_ENV%"
         REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
