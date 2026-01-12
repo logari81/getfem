@@ -47,8 +47,10 @@ jobs:
       shell: cmd
       run: |
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
-        echo "MKLROOT:" %MKLROOT%
-        (echo MKLROOT="%MKLROOT%") >> "%GITHUB_ENV%"
+        echo "store MKLROOT="%MKLROOT%
+        echo "store CMPLR_ROOT="%CMPLR_ROOT%
+        (echo MKLROOT=%MKLROOT%) >> "%GITHUB_ENV%"
+        (echo CMPLR_ROOT=%CMPLR_ROOT%) >> "%GITHUB_ENV%"
         REM Build MUMPS with Intel Fortran
         echo "Building MUMPS..."
         git clone https://github.com/scivision/mumps.git
@@ -104,7 +106,9 @@ jobs:
       run: |
         echo "Building GetFEM..."
         echo "%MKLROOT%\env\vars.bat"
-        call "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
+        call "%MKLROOT%\env\vars.bat"
+        echo "%CMPLR_ROOT%\env\vars.bat"
+        call "%CMPLR_ROOT%\env\vars.bat"
         cmake -B build ^
           -G Ninja ^
           -DENABLE_PYTHON=ON ^
