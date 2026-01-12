@@ -80,7 +80,8 @@ jobs:
         cmake -B build `
           -G Ninja `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
-          -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}"
+          -DCMAKE_INSTALL_PREFIX="${{ env.INSTALL_PREFIX }}" `
+          -D_CRT_SECURE_NO_WARNINGS
         cmake --build build
         cmake --install build
         cd ..
