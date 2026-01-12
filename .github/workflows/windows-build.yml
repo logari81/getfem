@@ -110,7 +110,6 @@ jobs:
           -DGENERATE_GETFEM_IM_LIST_H=OFF `
           -DENABLE_MULTITHREADED_BLAS=ON `
           -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON `
-          -D_CRT_SECURE_NO_WARNINGS `
           -DMUMPS_LIB_DIR="${{ env.INSTALL_PREFIX }}\lib" `
           -DMUMPS_INC_DIR="${{ env.INSTALL_PREFIX }}\include" `
           -DCMAKE_BUILD_TYPE="${{ env.BUILD_TYPE }}" `
