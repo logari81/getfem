@@ -103,8 +103,7 @@ jobs:
       shell: cmd
       run: |
         echo "Building GetFEM..."
-        #cd getfem
-        call "%MKLROOT%\env\vars.bat"
+        call ""%MKLROOT%\env\vars.bat""
         cmake -B build ^
           -G Ninja ^
           -DENABLE_PYTHON=ON ^
