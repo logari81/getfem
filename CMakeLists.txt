@@ -53,7 +53,7 @@ elseif(NOT BUILD_SHARED_LIBS AND BUILD_LIBRARY_TYPE STREQUAL "SHARED")
 endif()
 
 if(MSVC)
-  add_definitions(-D_CRT_SECURE_NO_WARNINGS)
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif()
 
 set(WITH_OPTIMIZATION "-O2" CACHE STRING "Set the optimization level (default: -O2)")
