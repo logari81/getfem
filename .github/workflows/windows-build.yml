@@ -49,8 +49,8 @@ jobs:
         call "C:\Program Files (x86)\Intel\oneAPI\setvars.bat"
         echo store MKLROOT=%MKLROOT%
         echo store CMPLR_ROOT=%CMPLR_ROOT%
-        echo MKLROOT=%MKLROOT% >> "%GITHUB_ENV%"
-        echo CMPLR_ROOT=%CMPLR_ROOT% >> "%GITHUB_ENV%"
+        echo MKLROOT=%MKLROOT%>> "%GITHUB_ENV%"
+        echo CMPLR_ROOT=%CMPLR_ROOT%>> "%GITHUB_ENV%"
         REM Build MUMPS with Intel Fortran
         echo Building MUMPS...
         git clone https://github.com/scivision/mumps.git
