@@ -22,10 +22,6 @@ jobs:
           New-Item -ItemType Directory -Path ${{ env.INSTALL_PREFIX }}
         }
 
-#        $URL2 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/0f85f30e-7b8b-4ad6-8465-8cbc6048525d/intel-dpcpp-cpp-compiler-2025.3.1.15_offline.exe"
-#        curl.exe --url $URL2 --retry 5 --retry-delay 5 --output "$TempDir\intel-dpcpp-cpp-compiler.exe"
-#        Start-Process -Wait -FilePath "$TempDir\intel-dpcpp-cpp-compiler.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
-
     - name: Intall Intel Fortran Essentials
       shell: pwsh
       run: |
@@ -36,13 +32,7 @@ jobs:
         curl.exe --url $URL3 --retry 5 --retry-delay 5 --output "$TempDir\intel-onemkl.exe"
         Start-Process -Wait -FilePath "$TempDir\intel-fortran-compiler.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
         Start-Process -Wait -FilePath "$TempDir\intel-onemkl.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
-#        dir "C:\Program Files (x86)\Intel\oneAPI\"
-#        dir "C:\Program Files (x86)\Intel\oneAPI\mkl\"
-#        dir "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\"
-#        dir "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\bin\"
 
-#        "C:\Program Files (x86)\Intel\oneAPI\compiler\latest\env\vars.bat"
-#        "C:\Program Files (x86)\Intel\oneAPI\mkl\latest\env\vars.bat"
     - name: Build MUMPS
       shell: cmd
       run: |
@@ -122,8 +112,6 @@ jobs:
           -DBLA_VENDOR=Intel10_64lp_seq
         cmake --build build
         cmake --install build
-#          -DBLAS_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt" `
-#          -DLAPACK_LIBRARIES="$env:MKLROOT\lib\intel64\mkl_rt"
 
     - name: Verify installations
       shell: pwsh
@@ -132,3 +120,12 @@ jobs:
         dir "C:\opt\lib"
         dir "C:\opt\bin"
         echo "Build completed successfully!"
+
+    - name: Upload built libraries as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: getfem-windows-build
+        path: |
+          C:\opt\lib\
+          C:\opt\bin\
+          C:\opt\include\
