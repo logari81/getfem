@@ -83,7 +83,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5  # Official action for Python setup
       with:
-        python-version: '3.14'
+        python-version: '3.12'
     - name: Install numpy
       shell: cmd
       run: |
