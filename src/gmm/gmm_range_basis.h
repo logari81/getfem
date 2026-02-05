@@ -85,7 +85,7 @@ namespace gmm {
   // Range basis with a restarted Lanczos method
   template <typename Mat>
   void range_basis_eff_Lanczos(const Mat &BB, std::set<size_type> &columns,
-                       double EPS=1E-12) {
+                               double EPS=1E-12) {
     typedef std::set<size_type> TAB;
     typedef typename linalg_traits<Mat>::value_type T;
     typedef typename number_traits<T>::magnitude_type R;
@@ -94,10 +94,9 @@ namespace gmm {
     col_matrix< rsvector<T> > B(mat_nrows(BB), mat_ncols(BB));
 
     k = 0;
-    for (TAB::iterator it = columns.begin(); it!=columns.end(); ++it, ++k){
+    for (TAB::iterator it = columns.begin(); it!=columns.end(); ++it, ++k)
       gmm::copy(scaled(mat_col(BB, *it), T(1)/vect_norm2(mat_col(BB, *it))),
                 mat_col(B, *it));
-    }
     std::vector<T> w(mat_nrows(B));
     size_type restart = 120;
     std::vector<T> sdiag(restart);
@@ -135,10 +134,13 @@ namespace gmm {
         R beta = R(0), alpha;
         gmm::scale(v, T(1)/vect_norm2(v));
         size_type eff_restart = restart;
-    if (sdiag.size() != restart) {
-      sdiag.resize(restart); eigval.resize(restart); diag.resize(restart); gmm::resize(eigvect, restart, restart);
-      gmm::resize(lv, nc_r, restart);
-    }
+        if (sdiag.size() != restart) {
+          sdiag.resize(restart);
+          eigval.resize(restart);
+          diag.resize(restart);
+          gmm::resize(eigvect, restart, restart);
+          gmm::resize(lv, nc_r, restart);
+        }
 
         for (size_type i = 0; i < restart; ++i) { // Lanczos iterations
           gmm::copy(v, mat_col(lv, i));
@@ -155,19 +157,27 @@ namespace gmm {
           gmm::add(gmm::scaled(v, -alpha), wl);
           sdiag[i] = beta = vect_norm2(wl);
           gmm::copy(v, v0);
-      if (beta < EPS) { eff_restart = i+1; break; }
-      gmm::copy(gmm::scaled(wl, T(1) / beta), v);
-    }
-    if (eff_restart != restart) {
-      sdiag.resize(eff_restart); eigval.resize(eff_restart); diag.resize(eff_restart);
-      gmm::resize(eigvect, eff_restart, eff_restart); gmm::resize(lv, nc_r, eff_restart);
-    }
+          if (beta < EPS) { eff_restart = i+1; break; }
+          gmm::copy(gmm::scaled(wl, T(1) / beta), v);
+        }
+        if (eff_restart != restart) {
+          sdiag.resize(eff_restart);
+          eigval.resize(eff_restart);
+          diag.resize(eff_restart);
+          gmm::resize(eigvect, eff_restart, eff_restart);
+          gmm::resize(lv, nc_r, eff_restart);
+        }
         tridiag_qr_algorithm(diag, sdiag, eigval, eigvect, true);
 
         size_type num = size_type(-1);
         rho2 = R(0);
-        for (size_type j = 0; j < eff_restart; ++j)
-          { R nvp=gmm::abs(eigval[j]); if (nvp > rho2) { rho2=nvp; num=j; }}
+        for (size_type j = 0; j < eff_restart; ++j) {
+          R nvp=gmm::abs(eigval[j]);
+          if (nvp > rho2) {
+            rho2=nvp;
+            num=j;
+          }
+        }
 
         GMM_ASSERT1(num != size_type(-1), "Internal error");
 
@@ -182,11 +192,15 @@ namespace gmm {
         size_type j_max = size_type(-1), j = 0;
         R val_max = R(0);
         for (TAB::iterator it=columns.begin(); it!=columns.end(); ++it, ++j)
-          if (gmm::abs(v[j]) > val_max)
-            { val_max = gmm::abs(v[j]); j_max = *it; }
-        columns.erase(j_max); nc_r = columns.size();
+          if (gmm::abs(v[j]) > val_max) {
+            val_max = gmm::abs(v[j]);
+            j_max = *it;
+          }
+        columns.erase(j_max);
+        nc_r = columns.size();
       }
-      else break;
+      else
+        break;
     }
   }
 
@@ -365,61 +379,60 @@ namespace gmm {
       columns.erase(ind[*it]);
   }
 
-  template <typename L> size_type nnz_eps(const L& l, double eps) {
-    typename linalg_traits<L>::const_iterator it = vect_const_begin(l),
-      ite = vect_const_end(l);
-    size_type res(0);
-    for (; it != ite; ++it) if (gmm::abs(*it) >= eps) ++res;
-    return res;
-  }
-
-  template <typename L>
-  bool reserve__rb(const L& l, std::vector<bool> &b, double eps) {
-    typename linalg_traits<L>::const_iterator it = vect_const_begin(l),
-      ite = vect_const_end(l);
-    bool ok = true;
-    for (; it != ite; ++it)
-      if (gmm::abs(*it) >= eps && b[it.index()]) ok = false;
-    if (ok) {
-      for (it = vect_const_begin(l); it != ite; ++it)
-        if (gmm::abs(*it) >= eps) b[it.index()] = true;
-    }
-    return ok;
-  }
 
   template <typename Mat>
   void range_basis(const Mat &B, std::set<size_type> &columns,
-                       double EPS, col_major, bool skip_init=false) {
+                   double EPS, col_major, bool skip_init=false) {
 
     typedef typename linalg_traits<Mat>::value_type T;
     typedef typename number_traits<T>::magnitude_type R;
 
     size_type nc = mat_ncols(B), nr = mat_nrows(B);
-
-    std::vector<R> norms(nc);
-    std::vector<bool> c_ortho(nc), booked(nr);
-    std::vector< std::set<size_type> > nnzs(mat_nrows(B));
-
+    std::vector<bool> c_ortho(nc);
     if (!skip_init) {
 
+      std::vector<R> norms(nc);
       R norm_max = R(0);
       for (size_type i = 0; i < nc; ++i) {
-        norms[i] = vect_norminf(mat_col(B, i));
+        norms[i] = vect_norminf(mat_const_col(B, i));
         norm_max = std::max(norm_max, norms[i]);
       }
 
       columns.clear();
+      std::vector< std::set<size_type> > nnzs(nr+1); // 0,1,...,nr non-zeros
       for (size_type i = 0; i < nc; ++i)
         if (norms[i] > norm_max*R(EPS)) {
           columns.insert(i);
-          nnzs[nnz_eps(mat_col(B, i), R(EPS) * norms[i])].insert(i);
+          size_type nnz_eps(0);
+          { // count how many non-zeros are in column i
+            const auto eps = R(EPS) * norms[i];
+            const auto col = mat_const_col(B, i);
+            const auto ite = vect_const_end(col);
+            for (auto it = vect_const_begin(col); it != ite; ++it)
+              if (gmm::abs(*it) >= eps)
+                ++nnz_eps;
+          }
+          nnzs[nnz_eps].insert(i);
         }
 
+      std::vector<bool> booked(nr);
       for (size_type i = 1; i < nr; ++i)
         for (std::set<size_type>::iterator it = nnzs[i].begin();
-             it != nnzs[i].end(); ++it)
-          if (reserve__rb(mat_col(B, *it), booked, R(EPS) * norms[*it]))
+             it != nnzs[i].end(); ++it) {
+          const auto eps = R(EPS) * norms[*it];
+          const auto col = mat_const_col(B, *it);
+          const auto ite = vect_const_end(col);
+          bool reserve__rb = true;
+          for (auto it1 = vect_const_begin(col); it1 != ite; ++it1)
+            if (gmm::abs(*it1) >= eps && booked[it1.index()])
+              reserve__rb = false;
+          if (reserve__rb) {
+            for (auto it1 = vect_const_begin(col); it1 != ite; ++it1)
+              if (gmm::abs(*it1) >= eps)
+                booked[it1.index()] = true;
             c_ortho[*it] = true;
+          }
+        }
     }
 
     size_type sizesm[7] = {125, 200, 350, 550, 800, 1100, 1500}, actsize;
@@ -492,7 +505,7 @@ namespace gmm {
     range_basis(B, columns, EPS,
                 typename principal_orientation_type
                 <typename linalg_traits<Mat>::sub_orientation>::potype());
-}
+  }
 
 }
 

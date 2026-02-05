@@ -35,8 +35,8 @@ option(ENABLE_QHULL "Enable Qhull support" ON)
 # Configure options for enabling/disabling linear solvers (at least one is required)
 option(ENABLE_SUPERLU "Enable SuperLU support" ON) # might be turned off by cmake if SuperLU is not found
 option(ENABLE_MUMPS "Enable MUMPS support" ON)     # might be turned off by cmake if MUMPS is not found
-# Configure option for enabling/disabling multithreaded BLAS (requires the dl library)
-option(ENABLE_MULTITHREADED_BLAS "Enable multithreaded blas support" OFF)
+# Configure option for forcing single threaded BLAS at runtime (requires the dl library)
+option(ENABLE_FORCE_SINGLETHREAD_BLAS "Enable switching to singlethreaded blas at runtime" ON)
 option(GENERATE_GETFEM_IM_LIST_H "Run perl script that (re-)generates header file with integration methods" ON)
 
 option(BUILD_SHARED_LIBS "Build libraries as SHARED, equivalent to BUILD_LIBRARY_TYPE=SHARED" ON)
@@ -498,9 +498,6 @@ endif()
 
 # Build python interface
 if(ENABLE_PYTHON)
-  if(NOT BUILD_SHARED_LIBS)
-    message(FATAL_ERROR "Building the python interface requires shared libraries")
-  else()
     set(INTERFACE_SOURCES
         interface/src/getfem_interface.h
         interface/src/getfem_interface.cc
@@ -613,7 +610,6 @@ print(sysconfig.get_path('purelib', scheme, vars={'base': '${CMAKE_INSTALL_PREFI
     message("Python3_SITELIB = ${Python3_SITELIB} (not used)")
     message("PYTHON_SITE_PACKAGES = ${PYTHON_SITE_PACKAGES} (used)")
     message("Python3_NumPy_INCLUDE_DIRS = ${Python3_NumPy_INCLUDE_DIRS} (used)")
-  endif()
 endif()
 
 if(ENABLE_OCTAVE)
@@ -643,23 +639,23 @@ set(GMM_USES_BLAS 1)
 set(GMM_USES_LAPACK 1)
 
 if(ENABLE_QHULL)
-#  find_library(QHULL_R_LIB qhull_r)
-#  message(STATUS "QHULL_R_LIB = ${QHULL_R_LIB}")
-#  target_link_libraries(libgetfem PRIVATE ${QHULL_R_LIB})
-  find_package(Qhull REQUIRED COMPONENTS qhull_r)
+  # Set default to qhull_r, user can override with any Qhull library name
+  set(QHULL_LIB "qhull_r" CACHE STRING "Qhull library name to link against")
+  message(STATUS "Looking for Qhull library: ${QHULL_LIB}")
+  find_package(Qhull REQUIRED COMPONENTS ${QHULL_LIB})
   if(Qhull_FOUND)
     set(GETFEM_HAVE_LIBQHULL_R_QHULL_RA_H 1)
-    target_link_libraries(libgetfem PRIVATE Qhull::qhull_r)
-    message(STATUS "Building with Qhull support")
+    target_link_libraries(libgetfem PRIVATE Qhull::${QHULL_LIB})
+    message(STATUS "Building with Qhull support (${QHULL_LIB})")
   else()
     set(ENABLE_QHULL OFF)
-    message(WARNING "Building without Qhull support")
+    message(WARNING "Qhull not found. Building without Qhull support")
   endif()
 else()
   message("Building with Qhull explicitly disabled")
 endif()
 
-if(NOT ENABLE_MULTITHREADED_BLAS)
+if(ENABLE_FORCE_SINGLETHREAD_BLAS)
   find_library(DL_LIB NAMES dl)
   set(CMAKE_REQUIRED_LIBRARIES ${DL_LIB})
     check_library_exists(dl dlsym "" HAVE_DLSYM)
@@ -686,7 +682,7 @@ message(STATUS "  ENABLE_OPENMP: ${ENABLE_OPENMP}")
 message(STATUS "  ENABLE_SUPERLU: ${ENABLE_SUPERLU}")
 message(STATUS "  ENABLE_MUMPS: ${ENABLE_MUMPS}")
 message(STATUS "  ENABLE_QHULL: ${ENABLE_QHULL}")
-message(STATUS "  ENABLE_MULTITHREADED_BLAS: ${ENABLE_MULTITHREADED_BLAS}")
+message(STATUS "  ENABLE_FORCE_SINGLETHREAD_BLAS: ${ENABLE_FORCE_SINGLETHREAD_BLAS}")
 message(STATUS "GetFEM version ${GETFEM_VERSION}")
 
 # Generate configuration header files for gmm and getfem
@@ -694,10 +690,11 @@ configure_file(cmake/gmm_arch_config.h.in ${CMAKE_BINARY_DIR}/gmm/gmm_arch_confi
 configure_file(cmake/getfem_arch_config.h.in ${CMAKE_BINARY_DIR}/getfem/getfem_arch_config.h)
 
 if(GENERATE_GETFEM_IM_LIST_H)
+find_program(Perl_EXECUTABLE perl REQUIRED)
 add_custom_command(
   OUTPUT ${CMAKE_SOURCE_DIR}/src/getfem/getfem_im_list.h
   WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/getfem/
-  COMMAND perl ${CMAKE_SOURCE_DIR}/cubature/make_getfem_im_list ${CMAKE_SOURCE_DIR}/cubature
+  COMMAND ${Perl_EXECUTABLE} ${CMAKE_SOURCE_DIR}/cubature/make_getfem_im_list ${CMAKE_SOURCE_DIR}/cubature
   COMMENT "Generating getfem_im_list.h")
 endif()
 
