@@ -122,8 +122,8 @@ jobs:
       shell: cmd
       run: |
         echo "Copying libifcoremd.dll and libmmd.dll"
-        copy "C:\Program Files (x86)\Intel\oneAPI\compiler\2024.0\bin\libifcoremd.dll" C:\opt\lib\site-packages\getfem\
-        copy "C:\Program Files (x86)\Intel\oneAPI\compiler\2024.0\bin\libmmd.dll"      C:\opt\lib\site-packages\getfem\
+        copy "%CMPLR_ROOT%\bin\libifcoremd.dll" C:\opt\lib\site-packages\getfem\
+        copy "%CMPLR_ROOT%\bin\libmmd.dll"      C:\opt\lib\site-packages\getfem\
 
     - name: Upload built libraries as artifact
       uses: actions/upload-artifact@v4
