@@ -152,7 +152,7 @@ jobs:
     - name: Create wheel package
       shell: cmd
       run: |
-        cd C:\opt
+        cd /d C:\opt
         (
         echo [build-system]
         echo requires = ["setuptools>=61.0", "wheel"]
@@ -167,7 +167,7 @@ jobs:
         echo dependencies = ["numpy"]
         echo.
         echo [tool.setuptools]
-        echo package-dir = { "getfem" = "C:\opt\lib\site-packages\getfem" }
+        echo package-dir = { "getfem" = "lib/site-packages/getfem" }
         echo packages = ["getfem"]
         echo.
         echo [tool.setuptools.package-data]
