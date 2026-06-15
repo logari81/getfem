@@ -174,7 +174,8 @@ jobs:
         echo getfem = ["*.pyd", "*.dll", "*.py"]
         ) > pyproject.toml
         pip install build
-        python -m build
+        python -m build --outdir C:\opt\dist
+        dir /s C:\opt\dist\
 
     - name: Upload wheel as artifact
       uses: actions/upload-artifact@v4
