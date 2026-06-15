@@ -16,7 +16,7 @@ jobs:
     steps:
     - name: Cache Intel Fortran & MKL installers
       id: cache-intel
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           C:\temp\intel-fortran-compiler.exe
@@ -180,4 +180,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: getfem-wheel-windows
-        path: dist\*.whl
+        path: C:\opt\dist\*.whl
