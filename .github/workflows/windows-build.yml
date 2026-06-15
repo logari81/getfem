@@ -14,24 +14,37 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - name: Create installation directory
-      shell: pwsh
-      run: |
-        If(!(test-path -PathType container ${{ env.INSTALL_PREFIX }}))
-        {
-          New-Item -ItemType Directory -Path ${{ env.INSTALL_PREFIX }}
-        }
+    - name: Cache Intel Fortran & MKL installers
+      id: cache-intel
+      uses: actions/cache@v3
+      with:
+        path: |
+          C:\temp\intel-fortran-compiler.exe
+          C:\temp\intel-onemkl.exe
+        key: ${{ runner.os }}-intel-installers-2025.3
+        restore-keys: |
+          ${{ runner.os }}-intel-installers-
 
-    - name: Intall Intel Fortran Essentials
-      shell: pwsh
+    - name: Create installation directory
+      shell: cmd
       run: |
-        $URL1 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/039121f2-d488-4bc1-a5bb-97528e3a4b86/intel-fortran-compiler-2025.3.2.26_offline.exe"
-        $URL2 = "https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ae472ff5-aa01-4a72-a452-ce7b559ef041/intel-onemkl-2025.3.1.10_offline.exe"
-        $TempDir = $env:TEMP
-        curl.exe --url $URL1 --retry 5 --retry-delay 5 --output "$TempDir\intel-fortran-compiler.exe"
-        curl.exe --url $URL2 --retry 5 --retry-delay 5 --output "$TempDir\intel-onemkl.exe"
-        Start-Process -Wait -FilePath "$TempDir\intel-fortran-compiler.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
-        Start-Process -Wait -FilePath "$TempDir\intel-onemkl.exe" -ArgumentList "-s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=$TempDir"
+        if not exist "${{ env.INSTALL_PREFIX }}" mkdir "${{ env.INSTALL_PREFIX }}"
+
+    - name: Download Intel Fortran Essentials (if not cached)
+      if: steps.cache-intel.outputs.cache-hit != 'true'
+      shell: cmd
+      run: |
+        if not exist "C:\temp" mkdir "C:\temp"
+        set URL1=https://registrationcenter-download.intel.com/akdlm/IRC_NAS/039121f2-d488-4bc1-a5bb-97528e3a4b86/intel-fortran-compiler-2025.3.2.26_offline.exe
+        set URL2=https://registrationcenter-download.intel.com/akdlm/IRC_NAS/ae472ff5-aa01-4a72-a452-ce7b559ef041/intel-onemkl-2025.3.1.10_offline.exe
+        curl.exe --url %URL1% --retry 5 --retry-delay 5 --output C:\temp\intel-fortran-compiler.exe
+        curl.exe --url %URL2% --retry 5 --retry-delay 5 --output C:\temp\intel-onemkl.exe
+
+    - name: Install Intel Fortran Essentials
+      shell: cmd
+      run: |
+        start /wait C:\temp\intel-fortran-compiler.exe -s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=C:\temp
+        start /wait C:\temp\intel-onemkl.exe -s --action install --eula=accept -p=NEED_VS2017_INTEGRATION=0 -p=NEED_VS2019_INTEGRATION=0 -p=NEED_VS2022_INTEGRATION=0 --log-dir=C:\temp
 
     - name: Build MUMPS
       shell: cmd
@@ -154,7 +167,7 @@ jobs:
         echo dependencies = ["numpy"]
         echo.
         echo [tool.setuptools]
-        echo package-dir = { "getfem" = "lib/site-packages/getfem" }
+        echo package-dir = { "getfem" = "C:\opt\lib\site-packages\getfem" }
         echo packages = ["getfem"]
         echo.
         echo [tool.setuptools.package-data]
