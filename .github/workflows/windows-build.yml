@@ -85,9 +85,6 @@ jobs:
         cmake --build build
         cmake --install build
 
-    - name: Checkout code
-      uses: actions/checkout@v5
-
     - name: Set up Python
       uses: actions/setup-python@v5  # Official action for Python setup
       with:
@@ -101,6 +98,9 @@ jobs:
         python -c "import numpy; print(f'NumPy version: {numpy.__version__}')"
         for /f %%t in ('python -c "from sys import version_info as v;print(f\"cp{v.major}{v.minor}\")"') do set PYTAG=%%t
         echo PYTAG=%PYTAG%>> "%GITHUB_ENV%"
+
+    - name: Checkout GetFEM code
+      uses: actions/checkout@v5
 
     - name: Build and install GetFEM
       shell: cmd
