@@ -7,7 +7,7 @@ on:
 env:
   INSTALL_PREFIX: 'C:\opt'
   BUILD_TYPE: Release
-  GF_VERSION: 5.5
+  GF_VERSION: 5.5rc1
 
 jobs:
   build:
